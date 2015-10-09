@@ -17,8 +17,8 @@ module.exports = (robot) ->
     imageMe msg, msg.match[3], (url) ->
       msg.send url
 
-  robot.hear /^animate( me| ma)? (.*)/i, (msg) ->
-    imageMe msg, msg.match[2], true, (url) ->
+  robot.hear /^(animate|gif)( me| ma)? (.*)/i, (msg) ->
+    imageMe msg, msg.match[3], true, (url) ->
       msg.send url
 
 imageMe = (msg, query, animated, faces, cb) ->
