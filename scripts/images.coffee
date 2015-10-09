@@ -13,26 +13,13 @@
 #   hubot mustache me <query> - Searches Google Images for the specified query and mustaches it.
 
 module.exports = (robot) ->
-  robot.hear /^(image|img)( me)? (.*)/i, (msg) ->
+  robot.hear /^(image|img)( me| ma)? (.*)/i, (msg) ->
     imageMe msg, msg.match[3], (url) ->
       msg.send url
 
-  robot.hear /^animate( me)? (.*)/i, (msg) ->
+  robot.hear /^animate( me| ma)? (.*)/i, (msg) ->
     imageMe msg, msg.match[2], true, (url) ->
       msg.send url
-
-  robot.hear /^(?:mo?u)?sta(?:s|c)h(?:e|ify)?(?: me)? (.*)/i, (msg) ->
-    mustacheBaseUrl = process.env.HUBOT_MUSTACHIFY_URL?.replace(/\/$/, '') or "http://mustachify.me"
-    mustachify = "#{mustacheBaseUrl}/rand?src="
-    imagery = msg.match[1]
-
-    if imagery.match /^https?:\/\//i
-      encodedUrl = encodeURIComponent imagery
-      msg.send "#{mustachify}#{encodedUrl}"
-    else
-      imageMe msg, imagery, false, true, (url) ->
-        encodedUrl = encodeURIComponent url
-        msg.send "#{mustachify}#{encodedUrl}"
 
 imageMe = (msg, query, animated, faces, cb) ->
   cb = animated if typeof animated == 'function'
