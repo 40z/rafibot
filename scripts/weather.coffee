@@ -25,6 +25,10 @@ module.exports = (robot) ->
     location = msg.match[2]
     get_data robot, msg, location, 'forecast', location.replace(/\s/g, '_'), send_forecast, 60*60*2
 
+  robot.hear /temp (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
+    location = msg.match[2]
+    get_data robot, msg, location, 'geolookup/conditions', location.replace(/\s/g, '_'), send_temp, 60*60*2    
+
   robot.hear /radar (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
     location = msg.match[2]
     get_data robot, msg, location, 'radar', location.replace(/\s/g, '_'), send_radar, 60*10
@@ -85,6 +89,10 @@ get_data = (robot, msg, location, service, query, cb, lifetime, stack=0) ->
           robot.brain.data.wunderground[cache_key].retrieved = new Date
           robot.brain.data.wunderground[cache_key].lifetime = lifetime
           cb msg, location, robot.brain.data.wunderground[cache_key]
+
+send_temp = (msg, location, data) ->
+  report = data['current_observation']
+  msg.send "It is #{report.temp_f} and feels like #{report.feelslike_f} in #{report.display_location.full}"
 
 send_forecast = (msg, location, data) ->
   report = data.forecast.txt_forecast.forecastday[0]
