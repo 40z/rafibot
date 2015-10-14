@@ -41,6 +41,10 @@ module.exports = (robot) ->
     location = msg.match[2]
     get_data robot, msg, location, 'webcams', location.replace(/\s/g, '_'), send_webcam, 60*30
 
+  robot.hear /^fore (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
+    location = msg.match[2]
+    get_data robot, msg, location, 'forecast', location.replace(/\s/g, '_'), send_long_forecast, 60*60*2
+
 # check cache, get data, store data, invoke callback.
 get_data = (robot, msg, location, service, query, cb, lifetime, stack=0) ->
   # what redis key to use
@@ -98,6 +102,13 @@ send_forecast = (msg, location, data) ->
   report = data.forecast.txt_forecast.forecastday[0]
   useMetric = process.env.HUBOT_WUNDERGROUND_USE_METRIC?
   msg.send "#{report.title} in #{location}: #{if useMetric then report.fcttext_metric else report.fcttext} (#{formatted_ttl data})"
+
+send_long_forecast = (msg, location, data) ->
+  report = data.forecast.txt_forecast.forecastday
+  useMetric = process.env.HUBOT_WUNDERGROUND_USE_METRIC?
+  for day in report
+    msg.reply "#{day.title} in #{location}: #{if useMetric then day.fcttext_metric else day.fcttext} (#{formatted_ttl data})"
+
 send_radar = (msg, location, data) ->
   msg.send "#{data.radar.image_url}#.png"
 
