@@ -57,7 +57,7 @@ get_data = (robot, msg, location, service, query, cb, lifetime, stack=0) ->
     robot.brain.data.wunderground[cache_key] = data = null
   if data?
     #console.log 'cache is valid'
-    cb msg, location, data
+    cb msg, location, data, robot
   else
     if not process.env.HUBOT_WUNDERGROUND_API_KEY?
       msg.send "HUBOT_WUNDERGROUND_API_KEY is not set. Sign up at http://www.wunderground.com/weather/api/."
@@ -92,7 +92,7 @@ get_data = (robot, msg, location, service, query, cb, lifetime, stack=0) ->
           robot.brain.data.wunderground[cache_key] = data
           robot.brain.data.wunderground[cache_key].retrieved = new Date
           robot.brain.data.wunderground[cache_key].lifetime = lifetime
-          cb msg, location, robot.brain.data.wunderground[cache_key]
+          cb msg, location, robot.brain.data.wunderground[cache_key], robot
 
 send_temp = (msg, location, data) ->
   report = data['current_observation']
@@ -103,11 +103,11 @@ send_forecast = (msg, location, data) ->
   useMetric = process.env.HUBOT_WUNDERGROUND_USE_METRIC?
   msg.send "#{report.title} in #{location}: #{if useMetric then report.fcttext_metric else report.fcttext} (#{formatted_ttl data})"
 
-send_long_forecast = (msg, location, data) ->
+send_long_forecast = (msg, location, data, robot) ->
   report = data.forecast.txt_forecast.forecastday
   useMetric = process.env.HUBOT_WUNDERGROUND_USE_METRIC?
   for day in report
-    msg.reply "#{day.title} in #{location}: #{if useMetric then day.fcttext_metric else day.fcttext} (#{formatted_ttl data})"
+    robot.send {room: msg.envelope.user.name}, "#{day.title} in #{location}: #{if useMetric then day.fcttext_metric else day.fcttext} (#{formatted_ttl data})"
 
 send_radar = (msg, location, data) ->
   msg.send "#{data.radar.image_url}#.png"
