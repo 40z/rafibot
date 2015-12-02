@@ -34,7 +34,6 @@ imageMe = (msg, query, animated, faces, cb) ->
   q =
     q: query,
     searchType:'image',
-    safe:'high',
     fields:'items(link)',
     cx: googleCseId,
     key: googleApiKey
