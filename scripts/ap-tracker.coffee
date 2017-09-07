@@ -27,7 +27,7 @@ module.exports = (robot) ->
     list = users(robot)
     stats = (ap_stats(robot, user) for user in list)
     stats.sort (a, b) ->
-      a.count - b.count
+      b.count - a.count
 
     for stat in stats
       continue if stat.count == 0
@@ -51,7 +51,7 @@ ap_stats = (robot, user) ->
   count = robot.brain.get("#{user}_count") || 0
   total_duration = robot.brain.get("#{user}_total") || 0
   average = total_duration / if count == 0 then 1 else count
-  current = if start_date then new Date - start_date else 0
+  current = new Date() - start_date
 
   user: user
   is_drinking: !!start_date
