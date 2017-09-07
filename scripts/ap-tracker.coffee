@@ -36,6 +36,7 @@ module.exports = (robot) ->
   robot.hear /track ap stats (\S+)$/i, (msg) ->
     user = msg.match[1].replace("@", "")
     stats = ap_stats(robot, user)
+    robot.logger.info(user, stats)
     if stats.is_drinking
       msg.send "#{user} has been drinking an AP for #{humanize(stats.current_duration)}."
     else
