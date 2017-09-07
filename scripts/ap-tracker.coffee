@@ -46,7 +46,7 @@ humanize = (milli) ->
   humanize_duration(milli, { round: true, largest: 2 })
 
 ap_stats = (robot, user) ->
-  start_date = robot.brain.get("#{user}_start")
+  start_date = Date.parse(robot.brain.get("#{user}_start"))
   add_user(robot, user)
 
   count = robot.brain.get("#{user}_count") || 0
@@ -72,7 +72,7 @@ add_user = (robot, user) ->
 
 start_ap = (robot, user) ->
   key = "#{user}_start"
-  robot.brain.set(key, new Date())
+  robot.brain.set(key, new Date().toString())
 
 stop_ap = (robot, user) ->
   stats = ap_stats(robot, user)
