@@ -32,6 +32,7 @@ module.exports = (robot) ->
     for stat in stats
       continue if stat.count == 0
       msg.send("#{stat.user} has drank #{stat.count} AP(s)!")
+    msg.send("And none for Gretchen Weiner!")
 
   robot.hear /track ap stats (\S+)$/i, (msg) ->
     user = msg.match[1].replace("@", "")
