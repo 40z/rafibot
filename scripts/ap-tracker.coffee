@@ -14,7 +14,12 @@ module.exports = (robot) ->
     if !stats.is_drinking
       msg.send "You haven't started drinking an AP."
     else
+      leader_stats = current_leader_stats(robot)
       msg.send "That AP took you #{humanize(stop_ap(robot, msg.message.user.name))}."
+      new_leader_stats = current_leader_stats(robot)
+      if !!leader_stats && leader_stats.user != new_leader_stats.user
+        msg.send "#{new_leader_stats.user} is the new leader with #{new_leader_stats.count} AP(s)! :crown:"
+        msg.send "The king is dead, long live the king!"
 
   robot.hear /track ap stats$/i, (msg) ->
     stats = ap_stats(robot, msg.message.user.name)
@@ -74,6 +79,13 @@ ap_stats = (robot, user) ->
 
 users = (robot) ->
   robot.brain.get('users') || []
+
+current_leader_stats = (robot) ->
+  list = users(robot)
+  stats = (ap_stats(robot, user) for user in list)
+  stats.sort (a, b) ->
+    b.count - a.count
+  if stats.length > 0 then stats[0] else null
 
 add_user = (robot, user) ->
   list = users(robot)
