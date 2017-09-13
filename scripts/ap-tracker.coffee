@@ -15,7 +15,14 @@ module.exports = (robot) ->
       msg.send "You haven't started drinking an AP."
     else
       leader_stats = current_leader_stats(robot)
-      msg.send "That AP took you #{humanize(stop_ap(robot, msg.message.user.name))}."
+      current_stats = ap_stats(robot, msg.message.user.name)
+      msg.send "That AP took you #{humanize(current_stats.current_duration)}."
+      if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2
+        stop_ap(robot, msg.message.user.name, current_stats.average)
+        msg.send "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
+      else
+        stop_ap(robot, msg.message.user.name)
+
       new_leader_stats = current_leader_stats(robot)
       if !!leader_stats && leader_stats.user != new_leader_stats.user
         msg.send "#{new_leader_stats.user} is the new leader with #{new_leader_stats.count} AP(s)! :crown:"
@@ -96,9 +103,8 @@ start_ap = (robot, user) ->
   key = "#{user}_start"
   robot.brain.set(key, new Date().toString())
 
-stop_ap = (robot, user) ->
+stop_ap = (robot, user, duration = null) ->
   stats = ap_stats(robot, user)
   robot.brain.set("#{user}_start", null)
   robot.brain.set("#{user}_count", stats.count + 1)
-  robot.brain.set("#{user}_total", stats.total_duration + stats.current_duration)
-  stats.current_duration
+  robot.brain.set("#{user}_total", stats.total_duration + (duration || stats.current_duration))
