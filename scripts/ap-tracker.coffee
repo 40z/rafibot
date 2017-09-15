@@ -48,11 +48,11 @@ module.exports = (robot) ->
     if stats_count.length > 0 && stats_count[0].user == stats_total[0].user
       msg.send("#{stats_count[0].user} is in the lead with #{stats_count[0].count} AP(s) for a total time of #{humanize(stats_count[0].total_duration)}.")
     else if stats_count.length > 0
-      msg.send("#{stats_count[0].user} has drank the most AP(s) at #{stats_count[0].count}, but #{stats_total[0].user} has drank the longest with a time of #{humanize(stats_total[0].total_duration)}.")
+      msg.send("#{stats_count[0].user} drank the most AP(s) at #{stats_count[0].count}, but #{stats_total[0].user} drank the longest with a time of #{humanize(stats_total[0].total_duration)}.")
 
     for stat in stats_count
       continue if stat.count == 0
-      msg.send("#{stat.user} has drank #{stat.count} AP(s)!")
+      msg.send("#{stat.user} drank #{stat.count} AP(s)!")
     msg.send("And none for Gretchen Weiner!")
 
   robot.hear /track ap stats (\S+)$/i, (msg) ->
@@ -62,7 +62,7 @@ module.exports = (robot) ->
     if stats.is_drinking
       msg.send "#{user} has been drinking an AP for #{humanize(stats.current_duration)}."
     else
-      msg.send "#{user} has drank #{stats.count} AP(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
+      msg.send "#{user} drank #{stats.count} AP(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
 
 humanize = (milli) ->
   humanize_duration(milli, { round: true, largest: 2 })
