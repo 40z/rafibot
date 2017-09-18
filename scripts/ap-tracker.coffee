@@ -1,10 +1,6 @@
 humanize_duration = require('humanize-duration')
 
 module.exports = (robot) ->
-  robot.hear /^migrate$/i, (msg) ->
-    migrate(robot)
-    msg.send "Migrated!"
-
   robot.hear /track (.+) start/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
     if stats.is_drinking
@@ -101,13 +97,6 @@ current_leader_stats = (robot, item) ->
   stats.sort (a, b) ->
     b.count - a.count
   if stats.length > 0 then stats[0] else null
-
-migrate = (robot) ->
-  list = users(robot)
-  for user in list
-    robot.brain.set("#{user}_ap_start", robot.brain.get("#{user}_start"))
-    robot.brain.set("#{user}_ap_count", robot.brain.get("#{user}_count"))
-    robot.brain.set("#{user}_ap_total", robot.brain.get("#{user}_total"))
 
 add_user = (robot, user) ->
   list = users(robot)
