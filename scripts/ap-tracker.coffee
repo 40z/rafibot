@@ -17,7 +17,7 @@ module.exports = (robot) ->
       leader_stats = current_leader_stats(robot, msg.match[1])
       current_stats = item_stats(robot, msg.message.user.name, msg.match[1])
       msg.send "That #{stats.item} took you #{humanize(current_stats.current_duration)}."
-      if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2
+      if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2 && current_stats.current_duration > 10800000
         item_stop(robot, msg.message.user.name, msg.match[1], current_stats.average)
         msg.send "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
       else
