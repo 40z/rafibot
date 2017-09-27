@@ -74,15 +74,15 @@ module.exports = (robot) ->
   #     res.send "Not annoying you right now, am I?"
   #
   #
-  # robot.router.post '/hubot/chatsecrets/:room', (req, res) ->
-  #   room   = req.params.room
-  #   data   = JSON.parse req.body.payload
-  #   secret = data.secret
-  #
-  #   robot.messageRoom room, "I have a secret: #{secret}"
-  #
-  #   res.send 'OK'
-  #
+   robot.router.post '/hubot/chatsecrets/:room', (req, res) ->
+     room   = req.params.room
+     data   = JSON.parse req.body.payload
+     secret = data.secret
+  
+     robot.messageRoom room, "I have a secret: #{secret}"
+  
+     res.send 'OK'
+  
   # robot.error (err, res) ->
   #   robot.logger.error "DOES NOT COMPUTE"
   #
