@@ -14,19 +14,8 @@ module.exports = (robot) ->
     if !stats.is_drinking
       msg.send "You haven't started drinking a #{stats.item}."
     else
-      leader_stats = current_leader_stats(robot, msg.match[1])
-      current_stats = item_stats(robot, msg.message.user.name, msg.match[1])
-      msg.send "That #{stats.item} took you #{humanize(current_stats.current_duration)}."
-      if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2 && current_stats.current_duration > 10800000
-        item_stop(robot, msg.message.user.name, msg.match[1], current_stats.average)
-        msg.send "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
-      else
-        item_stop(robot, msg.message.user.name, msg.match[1])
+      stop_tracking(robot, msg.message.room, stats, msg.match[1])
 
-      new_leader_stats = current_leader_stats(robot, msg.match[1])
-      if !!leader_stats && leader_stats.user != new_leader_stats.user
-        msg.send "#{new_leader_stats.user} is the new leader with #{new_leader_stats.count} #{new_leader_stats.item}(s)! :crown:"
-        msg.send "The king is dead, long live the king!"
 
   robot.hear /track (.+) stats$/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
@@ -62,6 +51,44 @@ module.exports = (robot) ->
       msg.send "#{user} has been drinking a #{stats.item} for #{humanize(stats.current_duration)}."
     else
       msg.send "#{user} drank #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
+
+  robot.router.post '/hubot/aptracker/:room', (req, res) ->
+    room   = req.params.room
+    data   = if req.body.payload? then JSON.parse req.body.payload else req.body
+    user = data.user
+    tracked_item = data.trackeditem
+    action = data.action
+
+    stats = item_stats(robot, user, tracked_item)
+    if stats.is_drinking
+      stop_tracking(robot, room, stats, tracked_item)
+      if action == "DOUBLE"
+        sleep 5000
+        item_start(robot, user, tracked_item)
+        robot.messageRoom room, "#{user} started tracking a #{tracked_item}."        
+    else
+      item_start(robot, user, tracked_item)
+      robot.messageRoom room, "#{user} started tracking a #{tracked_item}."
+      if action == "DOUBLE"
+        sleep 5000
+        stop_tracking(robot, room, stats, tracked_item)   
+  
+    res.send 'OK'
+
+stop_tracking = (robot, room, stats, tracked_item) ->
+  leader_stats = current_leader_stats(robot, msg.match[1])
+  current_stats = item_stats(robot, msg.message.user.name, msg.match[1])
+    robot.messageRoom room "That #{stats.item} took you #{humanize(current_stats.current_duration)}."
+    if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2 && current_stats.current_duration > 10800000
+      item_stop(robot, msg.message.user.name, msg.match[1], current_stats.average)
+      robot.messageRoom room "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
+    else
+      item_stop(robot, msg.message.user.name, msg.match[1])
+
+    new_leader_stats = current_leader_stats(robot, msg.match[1])
+    if !!leader_stats && leader_stats.user != new_leader_stats.user
+      robot.messageRoom room "#{new_leader_stats.user} is the new leader with #{new_leader_stats.count} #{new_leader_stats.item}(s)! :crown:"
+      robot.messageRoom room "The king is dead, long live the king!"
 
 humanize = (milli) ->
   humanize_duration(milli, { round: true, largest: 2 })
@@ -114,3 +141,7 @@ item_stop = (robot, user, item, duration = null) ->
   robot.brain.set("#{user}_#{item_to_track}_start", null)
   robot.brain.set("#{user}_#{item_to_track}_count", stats.count + 1)
   robot.brain.set("#{user}_#{item_to_track}_total", stats.total_duration + (duration || stats.current_duration))
+
+sleep = (ms) ->
+  start = new Date().getTime()
+  continue while new Date().getTime() - start < ms
