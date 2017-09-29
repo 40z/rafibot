@@ -14,7 +14,7 @@ module.exports = (robot) ->
     if !stats.is_drinking
       msg.send "You haven't started drinking a #{stats.item}."
     else
-      stop_tracking(robot, msg.message.room, stats, msg.match[1])
+      stop_tracking(robot, msg.message.room, stats, msg.match[1], msg.message.user.name)
 
 
   robot.hear /track (.+) stats$/i, (msg) ->
@@ -61,7 +61,7 @@ module.exports = (robot) ->
 
     stats = item_stats(robot, user, tracked_item)
     if stats.is_drinking
-      stop_tracking(robot, room, stats, tracked_item)
+      stop_tracking(robot, room, stats, tracked_item, user)
       if action == "DOUBLE"
         sleep 5000
         item_start(robot, user, tracked_item)
@@ -71,21 +71,21 @@ module.exports = (robot) ->
       robot.messageRoom room, "#{user} started tracking a #{tracked_item}."
       if action == "DOUBLE"
         sleep 5000
-        stop_tracking(robot, room, stats, tracked_item)   
+        stop_tracking(robot, room, stats, tracked_item, user)   
   
     res.send 'OK'
 
-stop_tracking = (robot, room, stats, tracked_item) ->
-  leader_stats = current_leader_stats(robot, msg.match[1])
-  current_stats = item_stats(robot, msg.message.user.name, msg.match[1])
+stop_tracking = (robot, room, stats, tracked_item, user) ->
+  leader_stats = current_leader_stats(robot, tracked_item)
+  current_stats = item_stats(robot, user, tracked_item)
     robot.messageRoom room "That #{stats.item} took you #{humanize(current_stats.current_duration)}."
     if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2 && current_stats.current_duration > 10800000
-      item_stop(robot, msg.message.user.name, msg.match[1], current_stats.average)
+      item_stop(robot, user, tracked_item, current_stats.average)
       robot.messageRoom room "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
     else
-      item_stop(robot, msg.message.user.name, msg.match[1])
+      item_stop(robot, user, tracked_item)
 
-    new_leader_stats = current_leader_stats(robot, msg.match[1])
+    new_leader_stats = current_leader_stats(robot, tracked_item)
     if !!leader_stats && leader_stats.user != new_leader_stats.user
       robot.messageRoom room "#{new_leader_stats.user} is the new leader with #{new_leader_stats.count} #{new_leader_stats.item}(s)! :crown:"
       robot.messageRoom room "The king is dead, long live the king!"
