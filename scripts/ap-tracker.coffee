@@ -78,17 +78,17 @@ module.exports = (robot) ->
 stop_tracking = (robot, room, stats, tracked_item, user) ->
   leader_stats = current_leader_stats(robot, tracked_item)
   current_stats = item_stats(robot, user, tracked_item)
-    robot.messageRoom room "That #{stats.item} took you #{humanize(current_stats.current_duration)}."
-    if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2 && current_stats.current_duration > 10800000
-      item_stop(robot, user, tracked_item, current_stats.average)
-      robot.messageRoom room "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
-    else
-      item_stop(robot, user, tracked_item)
+  robot.messageRoom room "That #{stats.item} took you #{humanize(current_stats.current_duration)}."
+  if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2 && current_stats.current_duration > 10800000
+    item_stop(robot, user, tracked_item, current_stats.average)
+    robot.messageRoom room "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
+  else
+    item_stop(robot, user, tracked_item)
 
-    new_leader_stats = current_leader_stats(robot, tracked_item)
-    if !!leader_stats && leader_stats.user != new_leader_stats.user
-      robot.messageRoom room "#{new_leader_stats.user} is the new leader with #{new_leader_stats.count} #{new_leader_stats.item}(s)! :crown:"
-      robot.messageRoom room "The king is dead, long live the king!"
+  new_leader_stats = current_leader_stats(robot, tracked_item)
+  if !!leader_stats && leader_stats.user != new_leader_stats.user
+    robot.messageRoom room "#{new_leader_stats.user} is the new leader with #{new_leader_stats.count} #{new_leader_stats.item}(s)! :crown:"
+    robot.messageRoom room "The king is dead, long live the king!"
 
 humanize = (milli) ->
   humanize_duration(milli, { round: true, largest: 2 })
