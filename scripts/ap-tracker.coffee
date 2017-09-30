@@ -57,7 +57,7 @@ module.exports = (robot) ->
     data   = if req.body.payload? then JSON.parse req.body.payload else req.body
     user = data.user
     tracked_item = data.trackeditem
-    action = data.action
+    action = data.action.replace /^\s+|\s+$/g, ""
 
     stats = item_stats(robot, user, tracked_item)
     if stats.is_drinking
