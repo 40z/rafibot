@@ -5,7 +5,7 @@ module.exports = (robot) ->
     try
       msg.send 'smokebomb'
       exec 'cd /home/jimmy/rafibot && git pull origin master', (err, stdout, stderr) ->
-        exec("kill $(ps aux | grep 'rafibot' | awk '{print $2}')")
+        exec("kill $(ps aux | grep -v grep | grep 'rafibot' | awk '{print $2}')")
     catch error
       msg.robot.logger.error "rafi reload error #{error}"
       msg.send "Could not update: #{error}"
