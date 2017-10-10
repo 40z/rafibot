@@ -48,8 +48,7 @@ module.exports = (robot) ->
     stats = item_stats(robot, user, msg.match[1])
     if stats.is_drinking
       msg.send "#{user} has been drinking a #{stats.item} for #{humanize(stats.current_duration)}."
-    else
-      msg.send "#{user} drank #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
+    msg.send "#{user} drank #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
 
   robot.router.post '/hubot/aptracker/:room', (req, res) ->
     room   = req.params.room
