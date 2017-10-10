@@ -21,8 +21,7 @@ module.exports = (robot) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
     if stats.is_drinking
       msg.send "You have been drinking your #{stats.item} for #{humanize(stats.current_duration)}."
-    else
-      msg.send "You have drank #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
+    msg.send "You have drank #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
 
   robot.hear /track (.+) leaderboard/i, (msg) ->
     list = users(robot)
@@ -65,14 +64,14 @@ module.exports = (robot) ->
       if action == "DOUBLE"
         sleep 5000
         item_start(robot, user, tracked_item)
-        robot.messageRoom room, "#{user} started tracking a #{tracked_item}."        
+        robot.messageRoom room, "#{user} started tracking a #{tracked_item}."
     else
       item_start(robot, user, tracked_item)
       robot.messageRoom room, "#{user} started tracking a #{tracked_item}."
       if action == "DOUBLE"
         sleep 5000
-        stop_tracking(robot, room, stats, tracked_item, user)   
-  
+        stop_tracking(robot, room, stats, tracked_item, user)
+
     res.send 'OK'
 
 stop_tracking = (robot, room, stats, tracked_item, user) ->
