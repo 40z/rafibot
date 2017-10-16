@@ -23,6 +23,22 @@ module.exports = (robot) ->
       msg.send "You have been drinking your #{stats.item} for #{humanize(stats.current_duration)}."
     msg.send "You have drank #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
 
+  robot.hear /track merge (.+) : (.+)$/i, (msg) ->
+    user = msg.message.user.name
+    from_stats = item_stats(robot, user, msg.match[1])
+    to_stats = item_stats(robot, user, msg.match[2])
+
+    current = to_stats.start_date || from_stats.start_date
+    put_item_stats(robot, user, to_stats.item, current, from_stats.count + to_stats.count, from_stats.total_duration + to_stats.total_duration)
+    put_item_stats(robot, user, from_stats.item, null, null, null)
+    msg.send("Merged #{msg.match[1]} into #{msg.match[2]}")
+
+    merged_stats = item_stats(robot, user, msg.match[2])
+    if merged_stats.is_drinking
+      msg.send "#{user} has been drinking a #{merged_stats.item} for #{humanize(merged_stats.current_duration)}."
+    msg.send "#{user} drank #{merged_stats.count} #{merged_stats.item}(s) for a total time of #{humanize(merged_stats.total_duration)}. Averaging #{humanize(merged_stats.average)}."
+
+
   robot.hear /track (.+) leaderboard/i, (msg) ->
     list = users(robot)
     stats_count = (item_stats(robot, user, msg.match[1]) for user in list)
@@ -115,6 +131,13 @@ item_stats = (robot, user, item) ->
 
 users = (robot) ->
   robot.brain.get('users') || []
+
+put_item_stats = (robot, user, item, start_date, count, total_duration) ->
+  item_to_track = sanitize(item)
+  date = if !!start_date then new Date(start_date).toString() else null
+  robot.brain.set("#{user}_#{item_to_track}_start", date)
+  robot.brain.set("#{user}_#{item_to_track}_count", count)
+  robot.brain.set("#{user}_#{item_to_track}_total", total_duration)
 
 current_leader_stats = (robot, item) ->
   list = users(robot)
