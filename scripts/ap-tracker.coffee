@@ -11,8 +11,8 @@ module.exports = (robot) ->
       item_start(robot, msg.message.user.name, msg.match[1])
       msg.send "Bottoms up!"
 
-  robot.hear /track stats$/, (msg) -> track_stats(robot, msg, msg.message.user.name, true)
-  robot.hear /track stats (\S+)$/, (msg) -> track_stats(robot, msg, msg.match[1].replace("@", ""), false)
+  robot.hear /track stats$/, (msg) -> track_stats(robot, msg)
+  robot.hear /track stats (\S+)$/, (msg) -> track_stats(robot, msg, msg.match[1].replace("@", ""))
 
   robot.hear /track (.+) stop/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
@@ -94,7 +94,8 @@ module.exports = (robot) ->
 
     res.send 'OK'
 
-track_stats = (robot, msg, user, secondPerson) ->
+track_stats = (robot, msg, user = msg.message.user.name) ->
+  secondPerson = msg.message.user.name == user
   client = redis.createClient()
   client.get "hubot:storage", (error, reply) ->
     json = JSON.parse(reply.toString())
@@ -110,7 +111,10 @@ track_stats = (robot, msg, user, secondPerson) ->
     tracked_stats = tracked_stats.filter (stat) -> stat.count != 0
     tracked_items = tracked_stats.map (stat) -> pluralize(stat.item.replace("_", " "), stat.count, true)
     subject_action = if secondPerson then "You have" else "#{user} has"
-    msg.send "#{subject_action} tracked:\n#{tracked_items.join("\n")}"
+    if tracked_items.length > 0
+      msg.send "#{subject_action} tracked:\n#{tracked_items.join("\n")}"
+    else
+      msg.send "#{subject_action} tracked nothing"
 
 stop_tracking = (robot, room, stats, tracked_item, user) ->
   leader_stats = current_leader_stats(robot, tracked_item)
