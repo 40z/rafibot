@@ -1,4 +1,6 @@
 humanize_duration = require('humanize-duration')
+pluralize = require('pluralize')
+redis = require('redis')
 
 module.exports = (robot) ->
   robot.hear /track (.+) start/i, (msg) ->
@@ -8,6 +10,9 @@ module.exports = (robot) ->
     else
       item_start(robot, msg.message.user.name, msg.match[1])
       msg.send "Bottoms up!"
+
+  robot.hear /track stats$/, (msg) -> track_stats(robot, msg, msg.message.user.name, true)
+  robot.hear /track stats (\S+)$/, (msg) -> track_stats(robot, msg, msg.match[1].replace("@", ""), false)
 
   robot.hear /track (.+) stop/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
@@ -88,6 +93,24 @@ module.exports = (robot) ->
         stop_tracking(robot, room, stats, tracked_item, user)
 
     res.send 'OK'
+
+track_stats = (robot, msg, user, secondPerson) ->
+  client = redis.createClient()
+  client.get "hubot:storage", (error, reply) ->
+    json = JSON.parse(reply.toString())
+    keys = Object.keys(json["_private"]).map (key) -> key.match "^#{user}_(.+)_start$"
+    tracking_stats = (item_stats(robot, user, key[1]) for key in keys when !!key)
+    tracking_stats = tracking_stats.filter (stat) -> stat.is_drinking
+    tracking_items = tracking_stats.map (stat) -> stat.item.replace("_", " ")
+    subject_action = if secondPerson then "You are" else "#{user} is"
+    if tracking_items.length > 0 then msg.send "#{subject_action} currently tracking:\n#{tracking_items.join("\n")}"
+
+    keys = Object.keys(json["_private"]).map (key) -> key.match "^#{user}_(.+)_count$"
+    tracked_stats = (item_stats(robot, user, key[1]) for key in keys when !!key)
+    tracked_stats = tracked_stats.filter (stat) -> stat.count != 0
+    tracked_items = tracked_stats.map (stat) -> pluralize(stat.item.replace("_", " "), stat.count, true)
+    subject_action = if secondPerson then "You have" else "#{user} has"
+    msg.send "#{subject_action} tracked:\n#{tracked_items.join("\n")}"
 
 stop_tracking = (robot, room, stats, tracked_item, user) ->
   leader_stats = current_leader_stats(robot, tracked_item)
