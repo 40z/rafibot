@@ -2,6 +2,15 @@ humanize_duration = require('humanize-duration')
 pluralize = require('pluralize')
 redis = require('redis')
 
+char_replace = (str, prev, next) ->
+  str.split(prev).join(next);
+  
+tokenize = (item) ->
+  char_replace(item, ' ', '_').toLowerCase()
+  
+restore = (item) -> 
+  char_replace(item, '_', ' ')
+
 module.exports = (robot) ->
   robot.hear /track (.+) start/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
@@ -102,14 +111,14 @@ track_stats = (robot, msg, user = msg.message.user.name) ->
     keys = Object.keys(json["_private"]).map (key) -> key.match "^#{user}_(.+)_start$"
     tracking_stats = (item_stats(robot, user, key[1]) for key in keys when !!key)
     tracking_stats = tracking_stats.filter (stat) -> stat.is_drinking
-    tracking_items = tracking_stats.map (stat) -> stat.item.replace("_", " ")
+    tracking_items = tracking_stats.map (stat) -> restore(stat.item)
     subject_action = if secondPerson then "You are" else "#{user} is"
     if tracking_items.length > 0 then msg.send "#{subject_action} currently tracking:\n#{tracking_items.join("\n")}"
 
     keys = Object.keys(json["_private"]).map (key) -> key.match "^#{user}_(.+)_count$"
     tracked_stats = (item_stats(robot, user, key[1]) for key in keys when !!key)
     tracked_stats = tracked_stats.filter (stat) -> stat.count != 0
-    tracked_items = tracked_stats.map (stat) -> pluralize(stat.item.replace("_", " "), stat.count, true)
+    tracked_items = tracked_stats.map (stat) -> pluralize(restore(stat.item), stat.count, true)
     subject_action = if secondPerson then "You have" else "#{user} has"
     if tracked_items.length > 0
       msg.send "#{subject_action} tracked:\n#{tracked_items.join("\n")}"
@@ -134,11 +143,8 @@ stop_tracking = (robot, room, stats, tracked_item, user) ->
 humanize = (milli) ->
   humanize_duration(milli, { round: true, largest: 2 })
 
-sanitize = (item) ->
-  item.replace(" ", "_").toLowerCase()
-
 item_stats = (robot, user, item) ->
-  item_to_track = sanitize(item)
+  item_to_track = tokenize(item)
   start_date = Date.parse(robot.brain.get("#{user}_#{item_to_track}_start"))
   add_user(robot, user)
 
@@ -160,7 +166,7 @@ users = (robot) ->
   robot.brain.get('users') || []
 
 put_item_stats = (robot, user, item, start_date, count, total_duration) ->
-  item_to_track = sanitize(item)
+  item_to_track = tokenize(item)
   date = if !!start_date then new Date(start_date).toString() else null
   robot.brain.set("#{user}_#{item_to_track}_start", date)
   robot.brain.set("#{user}_#{item_to_track}_count", count)
@@ -179,12 +185,12 @@ add_user = (robot, user) ->
   robot.brain.set('users', list)
 
 item_start = (robot, user, item) ->
-  item_to_track = sanitize(item)
+  item_to_track = tokenize(item)
   key = "#{user}_#{item_to_track}_start"
   robot.brain.set(key, new Date().toString())
 
 item_stop = (robot, user, item, duration = null) ->
-  item_to_track = sanitize(item)
+  item_to_track = tokenize(item)
   stats = item_stats(robot, user, item)
   robot.brain.set("#{user}_#{item_to_track}_start", null)
   robot.brain.set("#{user}_#{item_to_track}_count", stats.count + 1)
