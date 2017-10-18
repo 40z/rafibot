@@ -119,6 +119,7 @@ track_stats = (robot, msg, user = msg.message.user.name) ->
     tracked_stats = (item_stats(robot, user, key[1]) for key in keys when !!key)
     tracked_stats = tracked_stats.filter (stat) -> stat.count != 0
     tracked_items = tracked_stats.map (stat) -> pluralize(restore(stat.item), stat.count, true)
+    tracked_items.sort (a, b) -> b.count - a.count
     subject_action = if secondPerson then "You have" else "#{user} has"
     if tracked_items.length > 0
       msg.send "#{subject_action} tracked:\n#{tracked_items.join("\n")}"
