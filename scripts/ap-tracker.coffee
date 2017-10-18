@@ -20,30 +20,8 @@ module.exports = (robot) ->
       item_start(robot, msg.message.user.name, msg.match[1])
       msg.send "Bottoms up!"
 
-  robot.hear /^migrate$/i, (msg) ->
-    client = redis.createClient()
-    client.get "hubot:storage", (error, reply) ->
-      json = JSON.parse(reply.toString())
-      keys = Object.keys(json["_private"]).map (key) -> key.match "^([^_]+)_(.+)_([^_]+)"
-      keys = (key[0] for key in keys when !!key)
-      for key in keys
-        value = robot.brain.get key
-        delete robot.brain.data["_private"][key]
-        newKey = key.replace /\ /g, "_"
-        robot.brain.set newKey, value
-        msg.send "Migrating #{key} to #{newKey}"
-      msg.send "Done"
-
-  robot.hear /^list$/i, (msg) ->
-    client = redis.createClient()
-    client.get "hubot:storage", (error, reply) ->
-      json = JSON.parse(reply.toString())
-      keys = Object.keys(json["_private"]).map (key) -> key.match "^([^_]+)_(.+)_([^_]+)"
-      keys = (key[0] for key in keys when !!key)
-      msg.send keys
-
-  robot.hear /track stats$/i, (msg) -> track_stats(robot, msg)
-  robot.hear /track stats (\S+)$/i, (msg) -> track_stats(robot, msg, msg.match[1].replace("@", ""))
+  robot.hear /track stats$/, (msg) -> track_stats(robot, msg)
+  robot.hear /track stats (\S+)$/, (msg) -> track_stats(robot, msg, msg.match[1].replace("@", ""))
 
   robot.hear /track (.+) stop/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
