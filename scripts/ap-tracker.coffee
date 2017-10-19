@@ -37,6 +37,8 @@ module.exports = (robot) ->
       msg.send "You have been drinking your #{stats.item} for #{humanize(stats.current_duration)}."
     msg.send "You have drank #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
 
+  robot.hear /^track single (.+)$/, (msg) -> track_single_item(robot, msg)
+
   robot.hear /track merge (.+) : (.+)$/i, (msg) ->
     user = msg.message.user.name
     from_stats = item_stats(robot, user, msg.match[1])
@@ -103,6 +105,16 @@ module.exports = (robot) ->
 
     res.send 'OK'
 
+track_single_item = (robot, msg, user = msg.message.user.name) ->
+  item = msg.match[1]
+  stats = item_stats(robot, user, item)
+  if stats.is_drinking
+    msg.send "You are already tracking a #{stats.item}."
+  else
+    item_start(robot, user, item)
+    item_stop(robot, user, item, 5000)
+    msg.send "You have tracked #{pluralize(stats.item, stats.count + 1, true)}"
+
 track_stats = (robot, msg, user = msg.message.user.name) ->
   secondPerson = msg.message.user.name == user
   client = redis.createClient()
@@ -119,7 +131,7 @@ track_stats = (robot, msg, user = msg.message.user.name) ->
     tracked_stats = (item_stats(robot, user, key[1]) for key in keys when !!key)
     tracked_stats = tracked_stats.filter (stat) -> stat.count != 0
     tracked_stats.sort (a, b) -> b.count - a.count
-    tracked_items = tracked_stats.map (stat) -> pluralize(restore(stat.item), stat.count, true)
+    tracked_items = tracked_stats.map (stat) -> "#{stat.count} #{restore(stat.item)}"
     subject_action = if secondPerson then "You have" else "#{user} has"
     if tracked_items.length > 0
       msg.send "#{subject_action} tracked:\n#{tracked_items.join("\n")}"
