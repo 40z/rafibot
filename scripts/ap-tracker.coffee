@@ -20,8 +20,8 @@ module.exports = (robot) ->
       item_start(robot, msg.message.user.name, msg.match[1])
       msg.send "Bottoms up!"
 
-  robot.hear /track stats$/, (msg) -> track_stats(robot, msg)
-  robot.hear /track stats (\S+)$/, (msg) -> track_stats(robot, msg, msg.match[1].replace("@", ""))
+  robot.hear /track stats$/i, (msg) -> track_stats(robot, msg)
+  robot.hear /track stats (\S+)$/i, (msg) -> track_stats(robot, msg, msg.match[1].replace("@", ""))
 
   robot.hear /track (.+) stop/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
@@ -37,7 +37,7 @@ module.exports = (robot) ->
       msg.send "You have been drinking your #{stats.item} for #{humanize(stats.current_duration)}."
     msg.send "You have drank #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
 
-  robot.hear /^track single (.+)$/, (msg) -> track_single_item(robot, msg)
+  robot.hear /^track single (.+)$/i, (msg) -> track_single_item(robot, msg)
 
   robot.hear /track merge (.+) : (.+)$/i, (msg) ->
     user = msg.message.user.name
