@@ -20,22 +20,12 @@ module.exports = (robot) ->
       item_start(robot, msg.message.user.name, msg.match[1])
       msg.send "Bottoms up!"
 
-  robot.hear /track stats$/i, (msg) -> track_stats(robot, msg)
-  robot.hear /track stats (\S+)$/i, (msg) -> track_stats(robot, msg, msg.match[1].replace("@", ""))
-
   robot.hear /track (.+) stop/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
     if !stats.is_drinking
       msg.send "You haven't started drinking a #{stats.item}."
     else
       stop_tracking(robot, msg.message.room, stats, msg.match[1], msg.message.user.name)
-
-
-  robot.hear /track (.+) stats$/i, (msg) ->
-    stats = item_stats(robot, msg.message.user.name, msg.match[1])
-    if stats.is_drinking
-      msg.send "You have been drinking your #{stats.item} for #{humanize(stats.current_duration)}."
-    msg.send "You have drank #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
 
   robot.hear /^track single (.+)$/i, (msg) -> track_single_item(robot, msg)
 
@@ -53,7 +43,6 @@ module.exports = (robot) ->
     if merged_stats.is_drinking
       msg.send "#{user} has been drinking a #{merged_stats.item} for #{humanize(merged_stats.current_duration)}."
     msg.send "#{user} drank #{merged_stats.count} #{merged_stats.item}(s) for a total time of #{humanize(merged_stats.total_duration)}. Averaging #{humanize(merged_stats.average)}."
-
 
   robot.hear /track (.+) leaderboard/i, (msg) ->
     list = users(robot)
@@ -75,12 +64,12 @@ module.exports = (robot) ->
       msg.send("#{stat.user} drank #{stat.count} #{stat.item}(s)!")
     msg.send("And none for Gretchen Weiner!")
 
-  robot.hear /track (.+) stats (\S+)$/i, (msg) ->
-    user = msg.match[2].replace("@", "")
-    stats = item_stats(robot, user, msg.match[1])
-    if stats.is_drinking
-      msg.send "#{user} has been drinking a #{stats.item} for #{humanize(stats.current_duration)}."
-    msg.send "#{user} drank #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}."
+  robot.hear /track (?:(current) )?(?:(.+) )?stats(?: (\S+))?$/i, (msg) ->
+    user = if msg.match[3] then msg.match[3].replace("@", "") else msg.message.user.name
+    if !msg.match[2]
+      track_stats robot, msg, !!msg.match[1], user
+    else
+      track_item_stats robot, msg, msg.match[2], !!msg.match[1], user
 
   robot.router.post '/hubot/aptracker/:room', (req, res) ->
     room   = req.params.room
@@ -115,7 +104,21 @@ track_single_item = (robot, msg, user = msg.message.user.name) ->
     item_stop(robot, user, item, 5000)
     msg.send "You have tracked #{pluralize(stats.item, stats.count + 1, true)}"
 
-track_stats = (robot, msg, user = msg.message.user.name) ->
+track_item_stats = (robot, msg, item, showOnlyCurrent, user = msg.message.user.name) ->
+  secondPerson = msg.message.user.name == user
+  stats = item_stats(robot, user, msg.match[2])
+  if stats.is_drinking
+    subject_action = if secondPerson then "You have" else "#{user} has"
+    msg.send "#{subject_action} been tracking a #{stats.item} for #{humanize(stats.current_duration)}."
+  else if showOnlyCurrent
+    subject_action = if secondPerson then "You are" else "#{user} is"
+    msg.send "#{subject_action} not tracking a #{stats.item}"
+
+  if !showOnlyCurrent
+    subject_action = if secondPerson then "You have" else "#{user} has"
+    msg.send "#{subject_action} tracked #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}." 
+
+track_stats = (robot, msg, showOnlyCurrent, user = msg.message.user.name) ->
   secondPerson = msg.message.user.name == user
   client = redis.createClient()
   client.get "hubot:storage", (error, reply) ->
@@ -126,17 +129,19 @@ track_stats = (robot, msg, user = msg.message.user.name) ->
     tracking_items = tracking_stats.map (stat) -> restore(stat.item)
     subject_action = if secondPerson then "You are" else "#{user} is"
     if tracking_items.length > 0 then msg.send "#{subject_action} currently tracking:\n#{tracking_items.join("\n")}"
+    else if showOnlyCurrent then msg.send "#{subject_action} currently tracking nothing"
 
-    keys = Object.keys(json["_private"]).map (key) -> key.match "^#{user}_(.+)_count$"
-    tracked_stats = (item_stats(robot, user, key[1]) for key in keys when !!key)
-    tracked_stats = tracked_stats.filter (stat) -> stat.count != 0
-    tracked_stats.sort (a, b) -> b.count - a.count
-    tracked_items = tracked_stats.map (stat) -> "#{stat.count} #{restore(stat.item)}"
-    subject_action = if secondPerson then "You have" else "#{user} has"
-    if tracked_items.length > 0
-      msg.send "#{subject_action} tracked:\n#{tracked_items.join("\n")}"
-    else
-      msg.send "#{subject_action} tracked nothing"
+    if !showOnlyCurrent
+      keys = Object.keys(json["_private"]).map (key) -> key.match "^#{user}_(.+)_count$"
+      tracked_stats = (item_stats(robot, user, key[1]) for key in keys when !!key)
+      tracked_stats = tracked_stats.filter (stat) -> stat.count != 0
+      tracked_stats.sort (a, b) -> b.count - a.count
+      tracked_items = tracked_stats.map (stat) -> "#{stat.count} #{restore(stat.item)}"
+      subject_action = if secondPerson then "You have" else "#{user} has"
+      if tracked_items.length > 0
+        msg.send "#{subject_action} tracked:\n#{tracked_items.join("\n")}"
+      else
+        msg.send "#{subject_action} tracked nothing"
 
 stop_tracking = (robot, room, stats, tracked_item, user) ->
   leader_stats = current_leader_stats(robot, tracked_item)
