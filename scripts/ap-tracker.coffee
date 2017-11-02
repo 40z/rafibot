@@ -6,7 +6,7 @@ char_replace = (str, prev, next) ->
   str.split(prev).join(next);
   
 tokenize = (item) ->
-  char_replace(item, ' ', '_').toLowerCase()
+  char_replace(item.trim(), ' ', '_').toLowerCase()
   
 restore = (item) -> 
   char_replace(item, '_', ' ')
@@ -30,6 +30,10 @@ module.exports = (robot) ->
   robot.hear /^track single (.+)$/i, (msg) -> track_single_item(robot, msg)
 
   robot.hear /track merge (.+) : (.+)$/i, (msg) ->
+    if tokenize(msg.match[1]) == tokenize(msg.match[2])
+      msg.send "Can't merge an item into itself"
+      return
+      
     user = msg.message.user.name
     from_stats = item_stats(robot, user, msg.match[1])
     to_stats = item_stats(robot, user, msg.match[2])
