@@ -1,6 +1,7 @@
 humanize_duration = require('humanize-duration')
-pluralize = require('pluralize')
+pluralize_lib = require('pluralize')
 redis = require('redis')
+Articles = require('Articles')
 
 char_replace = (str, prev, next) ->
   str.split(prev).join(next);
@@ -11,11 +12,17 @@ tokenize = (item) ->
 restore = (item) -> 
   char_replace(item, '_', ' ')
 
+articlize = (item) ->
+  Articles.articlize(item)
+
+pluralize = (count, item) ->
+  pluralize_lib(item, count, true)
+
 module.exports = (robot) ->
   robot.hear /track (.+) start/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
     if stats.is_drinking
-      msg.send "You are already drinking a #{stats.item}."
+      msg.send "You are already drinking #{articlize stats.item}."
     else
       item_start(robot, msg.message.user.name, msg.match[1])
       msg.send "Bottoms up!"
@@ -23,7 +30,7 @@ module.exports = (robot) ->
   robot.hear /track (.+) stop/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
     if !stats.is_drinking
-      msg.send "You haven't started drinking a #{stats.item}."
+      msg.send "You haven't started drinking #{articlize stats.item}."
     else
       stop_tracking(robot, msg.message.room, stats, msg.match[1], msg.message.user.name)
 
@@ -45,8 +52,8 @@ module.exports = (robot) ->
 
     merged_stats = item_stats(robot, user, msg.match[2])
     if merged_stats.is_drinking
-      msg.send "#{user} has been drinking a #{merged_stats.item} for #{humanize(merged_stats.current_duration)}."
-    msg.send "#{user} drank #{merged_stats.count} #{merged_stats.item}(s) for a total time of #{humanize(merged_stats.total_duration)}. Averaging #{humanize(merged_stats.average)}."
+      msg.send "#{user} has been drinking #{articlize merged_stats.item} for #{humanize merged_stats.current_duration}."
+    msg.send "#{user} drank #{pluralize merged_stats.count, merged_stats.item} for a total time of #{humanize merged_stats.total_duration}. Averaging #{humanize merged_stats.average}."
 
   robot.hear /track (.+) leaderboard/i, (msg) ->
     list = users(robot)
@@ -59,13 +66,13 @@ module.exports = (robot) ->
       b.total_duration - a.total_duration
 
     if stats_count.length > 0 && stats_count[0].user == stats_total[0].user && stats_count[0].count > 0
-      msg.send("#{stats_count[0].user} is in the lead with #{stats_count[0].count} #{stats_count[0].item}(s) for a total time of #{humanize(stats_count[0].total_duration)}.")
+      msg.send("#{stats_count[0].user} is in the lead with #{pluralize stats_count[0].count, stats_count[0].item} for a total time of #{humanize(stats_count[0].total_duration)}.")
     else if stats_count.length > 0 && stats_count[0].count > 0
-      msg.send("#{stats_count[0].user} drank the most #{stats_count[0].item}(s) at #{stats_count[0].count}, but #{stats_total[0].user} drank the longest with a time of #{humanize(stats_total[0].total_duration)}.")
+      msg.send("#{stats_count[0].user} drank the most #{pluralize_lib stats_count[0].item, stats_count[0].count} at #{stats_count[0].count}, but #{stats_total[0].user} drank the longest with a time of #{humanize(stats_total[0].total_duration)}.")
 
     for stat in stats_count
       continue if stat.count == 0
-      msg.send("#{stat.user} drank #{stat.count} #{stat.item}(s)!")
+      msg.send("#{stat.user} drank #{pluralize stat.count, stat.item}!")
     msg.send("And none for Gretchen Weiner!")
 
   robot.hear /track (?:(current) )?(?:(.+) )?stats(?: (\S+))?$/i, (msg) ->
@@ -102,25 +109,25 @@ track_single_item = (robot, msg, user = msg.message.user.name) ->
   item = msg.match[1]
   stats = item_stats(robot, user, item)
   if stats.is_drinking
-    msg.send "You are already tracking a #{stats.item}."
+    msg.send "You are already tracking #{articlize stats.item}."
   else
     item_start(robot, user, item)
     item_stop(robot, user, item, 5000)
-    msg.send "You have tracked #{pluralize(stats.item, stats.count + 1, true)}"
+    msg.send "You have tracked #{pluralize stats.count + 1, stats.item}"
 
 track_item_stats = (robot, msg, item, showOnlyCurrent, user = msg.message.user.name) ->
   secondPerson = msg.message.user.name == user
   stats = item_stats(robot, user, msg.match[2])
   if stats.is_drinking
     subject_action = if secondPerson then "You have" else "#{user} has"
-    msg.send "#{subject_action} been tracking a #{stats.item} for #{humanize(stats.current_duration)}."
+    msg.send "#{subject_action} been tracking #{articlize stats.item} for #{humanize stats.current_duration}."
   else if showOnlyCurrent
     subject_action = if secondPerson then "You are" else "#{user} is"
-    msg.send "#{subject_action} not tracking a #{stats.item}"
+    msg.send "#{subject_action} not tracking #{articlize stats.item}"
 
   if !showOnlyCurrent
     subject_action = if secondPerson then "You have" else "#{user} has"
-    msg.send "#{subject_action} tracked #{stats.count} #{stats.item}(s) for a total time of #{humanize(stats.total_duration)}. Averaging #{humanize(stats.average)}." 
+    msg.send "#{subject_action} tracked #{pluralize stats.count, stats.item} for a total time of #{humanize stats.total_duration}. Averaging #{humanize stats.average}." 
 
 track_stats = (robot, msg, showOnlyCurrent, user = msg.message.user.name) ->
   secondPerson = msg.message.user.name == user
@@ -150,7 +157,7 @@ track_stats = (robot, msg, showOnlyCurrent, user = msg.message.user.name) ->
 stop_tracking = (robot, room, stats, tracked_item, user) ->
   leader_stats = current_leader_stats(robot, tracked_item)
   current_stats = item_stats(robot, user, tracked_item)
-  robot.messageRoom room, "That #{stats.item} took #{user} #{humanize(current_stats.current_duration)}."
+  robot.messageRoom room, "That #{stats.item} took #{user} #{humanize current_stats.current_duration}."
   if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2 && current_stats.current_duration > 10800000
     item_stop(robot, user, tracked_item, current_stats.average)
     robot.messageRoom room, "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
@@ -159,7 +166,7 @@ stop_tracking = (robot, room, stats, tracked_item, user) ->
 
   new_leader_stats = current_leader_stats(robot, tracked_item)
   if !!leader_stats && leader_stats.user != new_leader_stats.user
-    robot.messageRoom room, "#{new_leader_stats.user} is the new leader with #{new_leader_stats.count} #{new_leader_stats.item}(s)! :crown:"
+    robot.messageRoom room, "#{new_leader_stats.user} is the new leader with #{pluralize new_leader_stats.count, new_leader_stats.item}! :crown:"
     robot.messageRoom room, "The king is dead, long live the king!"
 
 humanize = (milli) ->
