@@ -1,7 +1,7 @@
 humanize_duration = require('humanize-duration')
 pluralize_lib = require('pluralize')
 redis = require('redis')
-Articles = require('Articles')
+Articles = require('articles')
 
 char_replace = (str, prev, next) ->
   str.split(prev).join(next);
