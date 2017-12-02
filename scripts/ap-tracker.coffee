@@ -36,6 +36,8 @@ module.exports = (robot) ->
 
   robot.hear /^track single (.+)$/i, (msg) -> track_single_item(robot, msg)
 
+  robot.hear /^track average (.+)$/i, (msg) -> track_average_item(robot, msg)
+
   robot.hear /track merge (.+) : (.+)$/i, (msg) ->
     if tokenize(msg.match[1]) == tokenize(msg.match[2])
       msg.send "Can't merge an item into itself"
@@ -113,6 +115,16 @@ track_single_item = (robot, msg, user = msg.message.user.name) ->
   else
     item_start(robot, user, item)
     item_stop(robot, user, item, 5000)
+    msg.send "You have tracked #{pluralize stats.count + 1, stats.item}"
+
+track_average_item = (robot, msg, user = msg.message.user.name) ->
+  item = msg.match[1]
+  stats = item_stats(robot, user, item)
+  if stats.is_drinking
+    msg.send "You are already tracking #{articlize stats.item}."
+  else
+    item_start(robot, user, item)
+    item_stop(robot, user, item, stats.average)
     msg.send "You have tracked #{pluralize stats.count + 1, stats.item}"
 
 track_item_stats = (robot, msg, item, showOnlyCurrent, user = msg.message.user.name) ->
