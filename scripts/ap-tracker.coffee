@@ -18,44 +18,33 @@ articlize = (item) ->
 pluralize = (count, item) ->
   pluralize_lib(item, count, true)
 
+humanize = (milli) ->
+  humanize_duration(milli, { round: true, largest: 2 })
+
+
+###
+Hubot triggers. Respond to events in the chat room.
+###
+
+
 module.exports = (robot) ->
   robot.hear /track (.+) start/i, (msg) ->
-    stats = item_stats(robot, msg.message.user.name, msg.match[1])
-    if stats.is_drinking
-      msg.send "You are already drinking #{articlize stats.item}."
-    else
-      item_start(robot, msg.message.user.name, msg.match[1])
-      msg.send "Bottoms up!"
+    [ item, user ] = [ msg.match[1], msg.message.user.name ]
+    msg.send startTracking item, forUser: user, usingRobot: robot
 
   robot.hear /track (.+) stop/i, (msg) ->
-    stats = item_stats(robot, msg.message.user.name, msg.match[1])
-    if !stats.is_drinking
-      msg.send "You haven't started drinking #{articlize stats.item}."
-    else
-      stop_tracking(robot, msg.message.room, stats, msg.match[1], msg.message.user.name)
+    [ item, user ] = [ msg.match[1], msg.message.user.name ]
+    msg.send stopTracking item, forUser: user, usingRobot: robot
 
-  robot.hear /^track single (.+)$/i, (msg) -> track_single_item(robot, msg)
+  robot.hear /^track single (.+)$/i, (msg) ->
+    [ item, user ] = [ msg.match[1], msg.message.user.name ]
+    msg.send trackSingle item, forUser: user, usingRobot: robot
 
   robot.hear /^track average (.+)$/i, (msg) -> track_average_item(robot, msg)
 
   robot.hear /track merge (.+) : (.+)$/i, (msg) ->
-    if tokenize(msg.match[1]) == tokenize(msg.match[2])
-      msg.send "Can't merge an item into itself"
-      return
-      
-    user = msg.message.user.name
-    from_stats = item_stats(robot, user, msg.match[1])
-    to_stats = item_stats(robot, user, msg.match[2])
-
-    current = to_stats.start_date || from_stats.start_date
-    put_item_stats(robot, user, to_stats.item, current, from_stats.count + to_stats.count, from_stats.total_duration + to_stats.total_duration)
-    put_item_stats(robot, user, from_stats.item, null, null, null)
-    msg.send("Merged #{msg.match[1]} into #{msg.match[2]}")
-
-    merged_stats = item_stats(robot, user, msg.match[2])
-    if merged_stats.is_drinking
-      msg.send "#{user} has been drinking #{articlize merged_stats.item} for #{humanize merged_stats.current_duration}."
-    msg.send "#{user} drank #{pluralize merged_stats.count, merged_stats.item} for a total time of #{humanize merged_stats.total_duration}. Averaging #{humanize merged_stats.average}."
+    [ item1, item2, user ] = [ msg.match[1], msg.match[2], msg.message.user.name ]
+    msg.send merge item1, into: item2, forUser: user, usingRobot: robot
 
   robot.hear /track (.+) leaderboard/i, (msg) ->
     list = users(robot)
@@ -93,29 +82,103 @@ module.exports = (robot) ->
 
     stats = item_stats(robot, user, tracked_item)
     if stats.is_drinking
-      stop_tracking(robot, room, stats, tracked_item, user)
+      robot.messageRoom room, stopTracking tracked_item, forSomeoneElse: user, usingRobot: robot
       if action == "DOUBLE"
         sleep 5000
-        item_start(robot, user, tracked_item)
-        robot.messageRoom room, "#{user} started tracking a #{tracked_item}."
+        robot.messageRoom room, startTracking tracked_item, forSomeoneElse: user, usingRobot: robot
     else
-      item_start(robot, user, tracked_item)
-      robot.messageRoom room, "#{user} started tracking a #{tracked_item}."
+      robot.messageRoom room, startTracking tracked_item, forSomeoneElse: user, usingRobot: robot
       if action == "DOUBLE"
         sleep 5000
-        stop_tracking(robot, room, stats, tracked_item, user)
+        robot.messageRoom room, stopTracking tracked_item, forSomeoneElse: user, usingRobot: robot
 
     res.send 'OK'
 
-track_single_item = (robot, msg, user = msg.message.user.name) ->
-  item = msg.match[1]
-  stats = item_stats(robot, user, item)
+
+###
+Tracking functions, called by triggers in the bot.
+Return a message that can be dumped to the chat room.
+###
+
+
+startTracking = (item, {forUser, forSomeoneElse, usingRobot}) ->
+  forUser ?= forSomeoneElse
+  stats = item_stats usingRobot, forUser, item
   if stats.is_drinking
-    msg.send "You are already tracking #{articlize stats.item}."
+    userAction = if !!forSomeoneElse then "#{forUser} is" else "You are"
+    return "#{userAction} already tracking #{articlize stats.item}."
   else
-    item_start(robot, user, item)
-    item_stop(robot, user, item, 5000)
-    msg.send "You have tracked #{pluralize stats.count + 1, stats.item}"
+    item_start usingRobot, forUser, item
+    return if !!forSomeoneElse then "#{forUser} started tracking #{articlize stats.item}." else "Bottoms up!"
+
+stopTracking = (item, {forUser, forSomeoneElse, usingRobot}) ->
+  forUser ?= forSomeoneElse
+  stats = item_stats usingRobot, forUser, item
+  if !stats.is_drinking
+    userAction = if !!forSomeoneElse then "#{forUser} hasn't" else "You haven't"
+    return "#{userAction} started drinking #{articlize stats.item}."
+  else
+    leader_stats = current_leader_stats usingRobot, item
+    current_stats = item_stats usingRobot, forUser, item
+    userAction = if !!forSomeoneElse then forUser else "you"
+    response = [ "That #{stats.item} took #{userAction} #{humanize current_stats.current_duration}." ]
+    if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2 && current_stats.current_duration > 10800000
+      item_stop usingRobot, forUser, item, current_stats.average
+      response.push "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
+    else
+      item_stop usingRobot, forUser, item
+
+    new_leader_stats = current_leader_stats usingRobot, item
+    if !!leader_stats && leader_stats.user != new_leader_stats.user
+      response.push "#{new_leader_stats.user} is the new leader with #{pluralize new_leader_stats.count, new_leader_stats.item}! :crown:"
+      response.push "The king is dead, long live the king!"
+    return response.join "\n"
+
+trackSingle = (item, {forUser, forSomeoneElse, usingRobot}) ->
+  forUser ?= forSomeoneElse
+  stats = item_stats usingRobot, forUser, item
+  if stats.is_drinking
+    userAction = if !!forSomeoneElse then "#{forUser} is" else "You are"
+    return "#{userAction} already tracking #{articlize stats.item}."
+  else
+    item_stop usingRobot, forUser, item, 5000
+    userAction = if !!forSomeoneElse then "#{forUser} has" else "You have"
+    return "#{userAction} tracked #{pluralize stats.count + 1, stats.item}"
+
+merge = (item, {into, forUser, usingRobot}) ->
+  if tokenize(item) == tokenize(into)
+    return "Can't merge an item into itself"
+    
+  from_stats = item_stats usingRobot, forUser, item
+  to_stats = item_stats usingRobot, forUser, into
+
+  current = to_stats.start_date || from_stats.start_date
+  put_item_stats(usingRobot, forUser, to_stats.item, current, from_stats.count + to_stats.count, from_stats.total_duration + to_stats.total_duration)
+  put_item_stats(usingRobot, forUser, from_stats.item, null, null, null)
+  response = [ "Merged #{item} into #{into}" ]
+
+  #TODO: Replace with stats call
+  merged_stats = item_stats usingRobot, forUser, into
+  if merged_stats.is_drinking
+    response.push "#{forUser} has been drinking #{articlize merged_stats.item} for #{humanize merged_stats.current_duration}."
+  response.push "#{forUser} drank #{pluralize merged_stats.count, merged_stats.item} for a total time of #{humanize merged_stats.total_duration}. Averaging #{humanize merged_stats.average}."
+  return response.join "\n"
+
+statsFor = (item, {forUser, forSomeoneElse, showingOnlyCurrent, usingRobot}) ->
+  forUser ?= forSomeoneElse
+  showingOnlyCurrent ?= false
+
+  stats = item_stats usingRobot, forUser, item
+  if stats.is_drinking
+    subject_action = if !!forSomeoneElse then "#{user} has" else "You have"
+    msg.send "#{subject_action} been tracking #{articlize stats.item} for #{humanize stats.current_duration}."
+  else if showingOnlyCurrent
+    subject_action = if secondPerson then "You are" else "#{user} is"
+    msg.send "#{subject_action} not tracking #{articlize stats.item}"
+
+  if !showOnlyCurrent
+    subject_action = if secondPerson then "You have" else "#{user} has"
+    msg.send "#{subject_action} tracked #{pluralize stats.count, stats.item} for a total time of #{humanize stats.total_duration}. Averaging #{humanize stats.average}." 
 
 track_average_item = (robot, msg, user = msg.message.user.name) ->
   item = msg.match[1]
@@ -166,23 +229,11 @@ track_stats = (robot, msg, showOnlyCurrent, user = msg.message.user.name) ->
       else
         msg.send "#{subject_action} tracked nothing"
 
-stop_tracking = (robot, room, stats, tracked_item, user) ->
-  leader_stats = current_leader_stats(robot, tracked_item)
-  current_stats = item_stats(robot, user, tracked_item)
-  robot.messageRoom room, "That #{stats.item} took #{user} #{humanize current_stats.current_duration}."
-  if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2 && current_stats.current_duration > 10800000
-    item_stop(robot, user, tracked_item, current_stats.average)
-    robot.messageRoom room, "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
-  else
-    item_stop(robot, user, tracked_item)
 
-  new_leader_stats = current_leader_stats(robot, tracked_item)
-  if !!leader_stats && leader_stats.user != new_leader_stats.user
-    robot.messageRoom room, "#{new_leader_stats.user} is the new leader with #{pluralize new_leader_stats.count, new_leader_stats.item}! :crown:"
-    robot.messageRoom room, "The king is dead, long live the king!"
+###
+Basic functions for accessing tracking information in redis
+###
 
-humanize = (milli) ->
-  humanize_duration(milli, { round: true, largest: 2 })
 
 item_stats = (robot, user, item) ->
   item_to_track = tokenize(item)
