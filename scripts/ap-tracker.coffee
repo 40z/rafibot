@@ -70,13 +70,10 @@ module.exports = (robot) ->
     if stats_count.length > 0 && stats_count[0].user == stats_total[0].user && stats_count[0].count > 0
       msg.send("#{stats_count[0].user} is in the lead with #{pluralize stats_count[0].count, stats_count[0].item} for a total time of #{humanize(stats_count[0].total_duration)}.")
     else if stats_count.length > 0 && stats_count[0].count > 0
-      msg.send("#{stats_count[0].user} drank the most #{pluralize_lib stats_count[0].item, stats_count[0].count} at #{stats_count[0].count}*, but #{stats_total[0].user} drank the longest with a time of #{humanize(stats_total[0].total_duration)}.")
+      msg.send("#{stats_count[0].user} drank the most #{pluralize_lib stats_count[0].item, stats_count[0].count} at #{stats_count[0].count}, but #{stats_total[0].user} drank the longest with a time of #{humanize(stats_total[0].total_duration)}.")
 
     for stat in stats_count
       continue if stat.count == 0
-      if stat.user == "jimjim"
-        msg.send("#{stat.user} drank #{pluralize stat.count, stat.item}*")
-      else
         msg.send("#{stat.user} drank #{pluralize stat.count, stat.item}!")
     msg.send("And none for Gretchen Weiner!")
 
