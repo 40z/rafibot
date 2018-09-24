@@ -74,7 +74,7 @@ module.exports = (robot) ->
 
     for stat in stats_count
       continue if stat.count == 0
-        msg.send("#{stat.user} drank #{pluralize stat.count, stat.item}!")
+      msg.send("#{stat.user} drank #{pluralize stat.count, stat.item}!")
     msg.send("And none for Gretchen Weiner!")
 
   robot.hear /track (?:(current) )?(?:(.+) )?stats(?: (\S+))?$/i, (msg) ->
