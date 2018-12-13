@@ -172,7 +172,7 @@ stop_tracking = (robot, room, stats, tracked_item, user) ->
   robot.messageRoom room, "That #{stats.item} took #{user} #{humanize current_stats.current_duration}."
   if current_stats.count > 5 && current_stats.current_duration > current_stats.average * 2 && current_stats.current_duration > 10800000
     item_stop(robot, user, tracked_item, current_stats.average)
-    robot.messageRoom room, "https://img.wonkette.com/wp-content/uploads/2016/08/phoenix-wright-objection.jpg"
+    robot.messageRoom room, "https://www.bgreco.net/objection/objection.gif"
   else
     item_stop(robot, user, tracked_item)
 
