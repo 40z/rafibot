@@ -98,14 +98,14 @@ module.exports = (robot) ->
         sleep 5000
         item_start(robot, user, tracked_item)
         robot.messageRoom room, "#{user} started tracking a #{tracked_item}."
+      res.send '{ "status": "stopped" }'
     else
       item_start(robot, user, tracked_item)
       robot.messageRoom room, "#{user} started tracking a #{tracked_item}."
       if action == "DOUBLE"
         sleep 5000
         stop_tracking(robot, room, stats, tracked_item, user)
-
-    res.send 'OK'
+      res.send '{ "status": "started" }'
 
 track_single_item = (robot, msg, user = msg.message.user.name) ->
   item = msg.match[1]
