@@ -100,7 +100,7 @@ get_data = (robot, msg, location, service, query, cb, lifetime, stack=0) ->
 send_temp = (msg, location, data) ->
   report = data['current']
   location = data['location']
-  msg.send "It is #{report.temp_f} and feels like #{report.feelslike_f} in #{location.name}"
+  msg.send "#{report['condition'].text} and #{report.temp_f}°F (feels like #{report.feelslike_f}°F) with #{report.wind_mph}mph wind in #{location.name}"
 
 send_forecast = (msg, location, data) ->
   report = data.forecast.txt_forecast.forecastday[0]
