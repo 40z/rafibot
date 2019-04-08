@@ -5,7 +5,7 @@
 #   None
 #
 # Configuration:
-#   HUBOT_WUNDERGROUND_API_KEY Sign up at http://www.wunderground.com/weather/api/.
+#   HUBOT_APIXU_KEY Sign up at http://www.wunderground.com/weather/api/.
 #   HUBOT_WUNDERGROUND_USE_METRIC Set to arbitrary value to use forecasts with metric system units
 #
 # Commands:
@@ -59,44 +59,48 @@ get_data = (robot, msg, location, service, query, cb, lifetime, stack=0) ->
     #console.log 'cache is valid'
     cb msg, location, data, robot
   else
-    if not process.env.HUBOT_WUNDERGROUND_API_KEY?
-      msg.send "HUBOT_WUNDERGROUND_API_KEY is not set. Sign up at http://www.wunderground.com/weather/api/."
+    if not process.env.HUBOT_APIXU_KEY?
+      msg.send "HUBOT_APIXU_KEY is not set. Sign up at http://www.apixu.com"
       return
     # get new data
     msg
-      .http("http://api.wunderground.com/api/#{process.env.HUBOT_WUNDERGROUND_API_KEY}/#{service}/q/#{encodeURIComponent query}.json")
+      .http("http://api.apixu.com/v1/current.json?key=#{process.env.HUBOT_APIXU_KEY}&q=#{encodeURIComponent query}")
       .get() (err, res, body) ->
         # check for a non-200 response. cache it for some short amount of time && msg.send 'unavailable'
-        data = JSON.parse(body)
+        if res.statusCode == 200
+          data = JSON.parse(body)
 
-        # probably an unknown place
-        if data.response?.error?
-          msg.send data.response.error.description
+          # probably an unknown place
+          if data.response?.error?
+            msg.send data.response.error.description
 
-        # ambiguous place, multiple matches
-        else if data.response?.results?
-          alts = for key,item of data.response.results
-            alternative_place item
-          # we don't seem to have array.filter
-          alts = for key,item of alts when item isnt ''
-            item
-          # if there's only 1 place, let's just get it.
-          # stack: guard against infinite recursion
-          if alts.length == 1 && stack == 0
-            get_data robot, msg, location, service, alts[0], cb, lifetime, 1
+          # ambiguous place, multiple matches
+          else if data.response?.results?
+            alts = for key,item of data.response.results
+              alternative_place item
+            # we don't seem to have array.filter
+            alts = for key,item of alts when item isnt ''
+              item
+            # if there's only 1 place, let's just get it.
+            # stack: guard against infinite recursion
+            if alts.length == 1 && stack == 0
+              get_data robot, msg, location, service, alts[0], cb, lifetime, 1
+            else
+              msg.send "Possible matches for '#{location}'.\n - #{alts.join('\n - ')}"
+
+          # looks good
           else
-            msg.send "Possible matches for '#{location}'.\n - #{alts.join('\n - ')}"
-
-        # looks good
+            robot.brain.data.wunderground[cache_key] = data
+            robot.brain.data.wunderground[cache_key].retrieved = new Date
+            robot.brain.data.wunderground[cache_key].lifetime = lifetime
+            cb msg, location, robot.brain.data.wunderground[cache_key], robot
         else
-          robot.brain.data.wunderground[cache_key] = data
-          robot.brain.data.wunderground[cache_key].retrieved = new Date
-          robot.brain.data.wunderground[cache_key].lifetime = lifetime
-          cb msg, location, robot.brain.data.wunderground[cache_key], robot
+          msg.send "Cannot find location."
 
 send_temp = (msg, location, data) ->
-  report = data['current_observation']
-  msg.send "It is #{report.temp_f} and feels like #{report.feelslike_f} in #{report.display_location.full}"
+  report = data['current']
+  location = data['location']
+  msg.send "It is #{report.temp_f} and feels like #{report.feelslike_f} in #{location.name}"
 
 send_forecast = (msg, location, data) ->
   report = data.forecast.txt_forecast.forecastday[0]
