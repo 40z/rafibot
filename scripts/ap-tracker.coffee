@@ -19,7 +19,7 @@ pluralize = (count, item) ->
   pluralize_lib(item, count, true)
 
 module.exports = (robot) ->
-  robot.hear /track (.+) start/i, (msg) ->
+  robot.hear /^track (.+) start$/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
     if stats.is_drinking
       msg.send "You are already drinking #{articlize stats.item}."
@@ -27,7 +27,7 @@ module.exports = (robot) ->
       item_start(robot, msg.message.user.name, msg.match[1])
       msg.send "Bottoms up!"
 
-  robot.hear /track (.+) stop/i, (msg) ->
+  robot.hear /^track (.+) stop$/i, (msg) ->
     stats = item_stats(robot, msg.message.user.name, msg.match[1])
     if !stats.is_drinking
       msg.send "You haven't started drinking #{articlize stats.item}."
@@ -37,6 +37,8 @@ module.exports = (robot) ->
   robot.hear /^track single (.+)$/i, (msg) -> track_single_item(robot, msg)
 
   robot.hear /^track average (.+)$/i, (msg) -> track_average_item(robot, msg)
+
+  robot.hear /^track (.*) cancel$/i, (msg) -> track_cancel_item(robot, msg)
 
   robot.hear /track merge (.+) : (.+)$/i, (msg) ->
     if tokenize(msg.match[1]) == tokenize(msg.match[2])
@@ -140,6 +142,15 @@ track_average_item = (robot, msg, user = msg.message.user.name) ->
     item_start(robot, user, item)
     item_stop(robot, user, item, stats.average)
     msg.send "You have tracked #{pluralize stats.count + 1, stats.item}"
+
+track_cancel_item = (robot, msg, user = msg.message.user.name) ->
+  item = msg.match[1]
+  stats = item_stats(robot, user, item)
+  if !stats.is_drinking
+    msg.send "You haven't started drinking #{articlize item}."
+  else
+    item_cancel(robot, user, item)
+    msg.send "Try harder or I'll find someone who can!"
 
 track_item_stats = (robot, msg, item, showOnlyCurrent, user = msg.message.user.name) ->
   secondPerson = msg.message.user.name == user
@@ -250,6 +261,10 @@ item_stop = (robot, user, item, duration = null) ->
   robot.brain.set("#{user}_#{item_to_track}_start", null)
   robot.brain.set("#{user}_#{item_to_track}_count", stats.count + 1)
   robot.brain.set("#{user}_#{item_to_track}_total", stats.total_duration + (duration || stats.current_duration))
+
+item_cancel = (robot, user, item) ->
+  item_to_track = tokenize(item)
+  robot.brain.set("#{user}_#{item_to_track}_start", null)
 
 sleep = (ms) ->
   start = new Date().getTime()
