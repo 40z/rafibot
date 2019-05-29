@@ -95,7 +95,7 @@ module.exports = (robot) ->
 
     stats = item_stats(robot, user, tracked_item)
     if stats.is_drinking
-      if action == "SINGLE"
+      if action == "SINGLE" or action == "TOGGLE"
         stop_tracking(robot, room, stats, tracked_item, user)
         res.send '{ "status": "stopped" }'
       else if action == "DOUBLE"
@@ -104,10 +104,10 @@ module.exports = (robot) ->
         sleep 5000
         item_start(robot, user, tracked_item)
         robot.messageRoom room, "#{user} started tracking a #{tracked_item}."
-      else if action == "AVERAGE"
+      else if action == "AVERAGE" or action == "REAL SINGLE"
         res.status(403).send '{ "status": "error" }'
     else
-      if action == "SINGLE"
+      if action == "SINGLE" or action == "TOGGLE"
         item_start(robot, user, tracked_item)
         robot.messageRoom room, "#{user} started tracking a #{tracked_item}."
         res.send '{ "status": "started" }'
@@ -117,6 +117,11 @@ module.exports = (robot) ->
         res.send '{ "status": "started" }'
         sleep 5000
         stop_tracking(robot, room, stats, tracked_item, user)
+      else if action == "REAL SINGLE"
+        item_start(robot, user, tracked_item)
+        item_stop(robot, user, tracked_item, 5000)
+        robot.messageRoom room, "#{user} has tracked #{pluralize stats.count + 1, stats.item}"
+        res.send '{ "status": "single" }'
       else if action == "AVERAGE"
         item_start(robot, user, tracked_item)
         item_stop(robot, user, tracked_item, stats.average)
