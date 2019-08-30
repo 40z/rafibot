@@ -14,8 +14,9 @@ module.exports = (robot) ->
 
   robot.respond /branch/i, (msg) ->
     try
-      exec 'cd /home/jimmy/rafibot && git branch | grep \*', (err, stdout, stderr) ->
-        msg.send stdout
+      exec 'cd /home/jimmy/rafibot', (err, stdout, stderr) ->
+        exec 'git branch | grep \\*', (err, stdout, stderr) ->
+          msg.send stdout
     catch error
       msg.robot.logger.error "rafi reload error #{error}"
       msg.send "Could not get branch: #{error}"
