@@ -21,7 +21,8 @@
     "humanize-duration": "^3.10.1",
     "redis": "^2.8.0",
     "pluralize": "^7.0.0",
-    "articles": "^0.2.1"
+    "articles": "^0.2.1",
+    "date-and-time": "^0.6.3"
   },
   "engines": {
     "node": "0.10.x"
