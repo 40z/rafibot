@@ -33,7 +33,7 @@ module.exports = (robot) ->
 			when "average" then track_item_average robot, req.params.user, req.body.item, respond_with_json_and_in_room(res, robot, req.body.room)
 	
 	robot.router.get '/hubot/aptracker/v2/users/:user/stats', (req, res) ->
-		list_stats robot, req.params.user, respond_with_json(res)
+		list_stats robot, req.params.user, false, respond_with_json(res)
 
 
 # --------------------------------
@@ -145,6 +145,13 @@ track_item_single = (robot, user, item, callback) ->
 	stats = get_item_stats(robot, user, item)
 	is_new_leader = check_leader robot, item, -> put_item_stats(robot, user, item, stats.start_date, stats.count + 1, stats.total_duration + 5000)
 	callback { status: 200, code: MessageCodes.numberOfTracks, is_new_leader: is_new_leader, stats: get_item_stats(robot, user, item) }
+
+track_item_toggle = (robot, user, item, callback) ->
+	stats = get_item_stats(robot, user, item)
+	if stats.is_drinking 
+		track_item_stop robot, user, item, callback
+	else
+		track_item_start robot, user, item, callback
 
 track_item_average = (robot, user, item, callback) ->
 	stats = get_item_stats(robot, user, item)
