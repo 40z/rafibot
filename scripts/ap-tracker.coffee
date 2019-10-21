@@ -243,7 +243,11 @@ second_person = (response) ->
 third_person = (response) ->
 	current_item_stats = (a) -> "#{a.stats.user} has been tracking #{articlize a.stats.item} for #{humanize a.stats.current_duration}."
 	current_items = (a) -> "#{a.user} is currently tracking:\n#{a.current_items.join("\n")}"
+	new_king = (a) -> "#{if a.is_new_leader then "\n#{a.stats.user} is the new leader with #{pluralize a.stats.count, a.stats.item}! :crown:\nThe king is dead, long live the king!" else ""}"
 	return switch response.code
+		when MessageCodes.startTracking then "#{response.stats.user} started tracking #{articlize response.stats.item}"
+		when MessageCodes.stopTracking then "That #{response.stats.item} took #{response.stats.user} #{humanize response.duration}#{new_king response}"
+		when MessageCodes.numberOfTracks then "#{response.stats.user} has tracked #{pluralize response.stats.count, response.stats.item}#{new_king response}"
 		when MessageCodes.itemStats then "#{if response.stats.is_drinking then "#{current_item_stats response}\n" else ""}#{response.stats.user} has tracked #{pluralize response.stats.count, response.stats.item} for a total time of #{humanize response.stats.total_duration}. Averaging #{humanize response.stats.average}."
 		when MessageCodes.currentItemStats then "#{if response.stats.is_drinking then current_item_stats(response) else "#{response.stats.user} is not tracking #{articlize response.stats.item}"}"
 		when MessageCodes.stats then "#{if response.current_items.length > 0 then "#{current_items response}\n" else ""}#{if response.all_items.length > 0 then "#{response.user} has tracked:\n#{response.all_items.join("\n")}" else "#{response.user} has tracked nothing"}"
