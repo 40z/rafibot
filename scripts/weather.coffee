@@ -64,7 +64,7 @@ get_data = (robot, msg, location, service, query, cb, lifetime, stack=0) ->
       return
     # get new data
     msg
-      .http("http://api.weatherstack.com/current?access_key=#{process.env.HUBOT_APIXU_KEY}&query=#{encodeURIComponent query}")
+      .http("api.weatherstack.com/current?access_key=#{process.env.HUBOT_APIXU_KEY}&query=#{encodeURIComponent query}")
       .get() (err, res, body) ->
         # check for a non-200 response. cache it for some short amount of time && msg.send 'unavailable'
         if res.statusCode == 200
