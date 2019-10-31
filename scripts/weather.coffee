@@ -146,3 +146,4 @@ ttl = (data) ->
 alternative_place = (item) ->
   return '' if item.country != 'US' || item.state == "" || item.city == ""
   return "#{item.state}/#{item.city.replace(/\s/g, '_')}"
+© 2019 GitHub, Inc.
