@@ -12,6 +12,21 @@ module.exports = (robot) ->
             robot.brain.set(lan_token, date)
             msg.send "GET HYPE!"
 
+    robot.hear /last lan/i, (msg) ->
+        client = redis.createClient()
+        client.get "hubot:storage", (error, reply) ->
+            json = JSON.parse(reply.toString())
+            keys = (match[0] for match in Object.keys(json["_private"]).map((key) -> key.match "^lan_(.+)") when !!match)
+            pairs = keys.map (key) -> { key: key, value: robot.brain.get(key) }
+
+            current_time = new Date().getTime()
+            last_lan = pairs.sort((a, b) -> a.value > b.value).find (p) -> p.value < current_time
+
+            if !!last_lan
+                msg.send("#{restore(last_lan.key)} LAN was #{humanize(last_lan.value)} ago")
+            else
+                msg.send("I dunno when the last LAN was. I suck...")
+
     robot.hear /^(.+) lan countdown/i, (msg) ->
         lan_token = tokenize(msg.match[1])
         current_time = new Date().getTime()
