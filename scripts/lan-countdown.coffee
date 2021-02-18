@@ -20,7 +20,7 @@ module.exports = (robot) ->
             pairs = keys.map (key) -> { key: key, value: robot.brain.get(key) }
 
             current_time = new Date().getTime()
-            last_lan = pairs.sort((a, b) -> a.value > b.value).find (p) -> p.value < current_time
+            last_lan = pairs.sort((a, b) -> a.value > b.value).find (p) -> p.value? and p.value < current_time
 
             if !!last_lan
                 msg.send("#{restore(last_lan.key)} LAN was #{humanize(last_lan.value)} ago")
