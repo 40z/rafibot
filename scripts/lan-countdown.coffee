@@ -15,12 +15,13 @@ module.exports = (robot) ->
     robot.hear /last lan/i, (msg) ->
         client = redis.createClient()
         client.get "hubot:storage", (error, reply) ->
-            json = JSON.parse(reply.toString())
-            keys = (match[0] for match in Object.keys(json["_private"]).map((key) -> key.match "^lan_(.+)") when !!match)
-            pairs = keys.map (key) -> { key: key, value: robot.brain.get(key) }
+            json = JSON.parse(reply.toString())["_private"]
+            keys = (match[0] for match in Object.keys(json).map((key) -> key.match "^lan_(.+)") when !!match)
+            pairs = keys.map (key) -> { key: key, value: json[key] }
 
             current_time = new Date().getTime()
-            last_lan = pairs.sort((a, b) -> a.value > b.value).find (p) -> p.value? and p.value < current_time
+            sorted = pairs.sort((a, b) -> b.value - a.value)
+            last_lan = sorted.find (p) -> p.value? and p.value < current_time
 
             if !!last_lan
                 msg.send("#{restore(last_lan.key)} LAN was #{humanize(last_lan.value)} ago")
@@ -45,7 +46,7 @@ module.exports = (robot) ->
             pairs = keys.map (key) -> { key: key, value: robot.brain.get(key) }
 
             current_time = new Date().getTime()
-            next_lan = pairs.sort((a, b) -> a.value > b.value).find (p) -> p.value >= current_time
+            next_lan = pairs.sort((a, b) -> a.value - b.value).find (p) -> p.value >= current_time
 
             if !!next_lan
                 msg.send("#{restore(next_lan.key)} LAN in #{humanize(next_lan.value)}")
