@@ -5,26 +5,26 @@
   "author": "Jimmy Perrine <jimmy.perrine@gmail.com>",
   "description": "fuck you",
   "dependencies": {
-    "hubot": "^2.16.0",
-    "hubot-diagnostics": "0.0.1",
-    "hubot-google-images": "^0.2.2",
-    "hubot-google-translate": "^0.2.0",
-    "hubot-help": "^0.1.1",
-    "hubot-heroku-keepalive": "^1.0.0",
-    "hubot-maps": "0.0.2",
-    "hubot-pugme": "^0.1.0",
-    "hubot-redis-brain": "0.0.3",
-    "hubot-rules": "^0.1.1",
-    "hubot-scripts": "^2.16.2",
-    "hubot-shipit": "^0.2.0",
-    "hubot-slack": "^3.3.0",
-    "humanize-duration": "^3.10.1",
-    "redis": "^2.8.0",
-    "pluralize": "^7.0.0",
-    "articles": "^0.2.1",
-    "date-and-time": "^0.6.3"
+    "hubot": "",
+    "hubot-diagnostics": "",
+    "hubot-google-images": "",
+    "hubot-google-translate": "",
+    "hubot-help": "",
+    "hubot-heroku-keepalive": "",
+    "hubot-maps": "",
+    "hubot-pugme": "",
+    "hubot-redis-brain": "",
+    "hubot-rules": "",
+    "hubot-scripts": "",
+    "hubot-shipit": "",
+    "hubot-slack": "",
+    "humanize-duration": "",
+    "redis": "3",
+    "pluralize": "",
+    "articles": "",
+    "date-and-time": ""
   },
   "engines": {
-    "node": "0.10.x"
+    "node": "19.x"
   }
 }

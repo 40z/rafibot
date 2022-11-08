@@ -41,6 +41,7 @@ module.exports = (robot) ->
 # --------------------------------
 
 redis = require('redis')
+Url = require('url')
 char_replace = (str, prev, next) -> str.split(prev).join(next);
 tokenize = (item) -> char_replace(item.trim(), ' ', '_').toLowerCase()
 restore = (item) -> char_replace(item, '_', ' ')
@@ -99,7 +100,8 @@ list_item_stats = (robot, user, item, showOnlyCurrent, callback) ->
 	callback { status: 200, code: code, stats: stats }
 
 list_stats = (robot, user, showOnlyCurrent, callback) ->
-	client = redis.createClient()
+	info = Url.parse process.env.REDIS_URL or 'redis://localhost:6379', true
+	client = redis.createClient(info.port, info.hostname)
 	code = if showOnlyCurrent then MessageCodes.currentStats else MessageCodes.stats
 	normalized_user = user.toLowerCase().replace("@", "")
 	client.get "hubot:storage", (error, reply) ->
