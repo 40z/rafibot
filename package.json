@@ -19,7 +19,7 @@
     "hubot-shipit": "",
     "hubot-slack": "",
     "humanize-duration": "",
-    "redis": "3",
+    "redis": "4",
     "pluralize": "",
     "articles": "",
     "date-and-time": ""
