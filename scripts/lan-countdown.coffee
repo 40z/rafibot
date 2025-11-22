@@ -3,7 +3,7 @@ redis = require('redis')
 
 module.exports = (robot) ->
 
-    robot.hear /^(.+) lan (on|is) (.+)/i, (msg) ->
+    robot.hear /(.+) lan (on|is) (.+)/i, (msg) ->
         lan_token = tokenize(msg.match[1])
         date = Date.parse(msg.match[3])
         if isNaN(date)
@@ -28,7 +28,7 @@ module.exports = (robot) ->
             else
                 msg.send("I dunno when the last LAN was. I suck...")
 
-    robot.hear /^(.+) lan countdown/i, (msg) ->
+    robot.hear /(.+) lan countdown/i, (msg) ->
         lan_token = tokenize(msg.match[1])
         current_time = new Date().getTime()
         date = robot.brain.get(lan_token)
@@ -38,7 +38,7 @@ module.exports = (robot) ->
         else
             msg.send "No LAN scheduled"
 
-    robot.hear /^lan countdown/i, (msg) ->
+    robot.hear /lan countdown/i, (msg) ->
         client = redis.createClient()
         client.get "hubot:storage", (error, reply) ->
             json = JSON.parse(reply.toString())
@@ -53,7 +53,7 @@ module.exports = (robot) ->
             else
                 msg.send("No upcoming LANs")
 
-    robot.hear /^cancel (.+) lan/i, (msg) ->
+    robot.hear /cancel (.+) lan/i, (msg) ->
         lan_token = tokenize(msg.match[1])
         robot.brain.set lan_token, null
         msg.send ":austin:"

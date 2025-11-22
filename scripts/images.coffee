@@ -13,11 +13,11 @@
 #   hubot mustache me <query> - Searches Google Images for the specified query and mustaches it.
 
 module.exports = (robot) ->
-  robot.hear /^(image|img)( me| ma)? (.*)/i, (msg) ->
+  robot.hear /(image|img)( me| ma)? (.*)/i, (msg) ->
     imageMe msg, msg.match[3], (url) ->
       msg.send url
 
-  robot.hear /^(animate|gif)( me| ma)? (.*)/i, (msg) ->
+  robot.hear /(animate|gif)( me| ma)? (.*)/i, (msg) ->
     imageMe msg, msg.match[3], true, (url) ->
       msg.send url
 

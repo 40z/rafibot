@@ -1,19 +1,19 @@
 module.exports = (robot) ->
-	robot.hear /^track (.+) start$/i, (msg) -> track_item_start robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track (.+) start$/i, (msg) -> track_item_start robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /^track (.+) stop$/i, (msg) -> track_item_stop robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track (.+) stop$/i, (msg) -> track_item_stop robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /^track single (.+)$/i, (msg) -> track_item_single robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track single (.+)$/i, (msg) -> track_item_single robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /^track average (.+)$/i, (msg) -> track_item_average robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track average (.+)$/i, (msg) -> track_item_average robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /^track (.*) cancel$/i, (msg) -> track_item_cancel robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track (.*) cancel$/i, (msg) -> track_item_cancel robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /^track merge (.+) : (.+)$/i, (msg) -> merge_item robot, msg.message.user.name, msg.match[1], msg.match[2], respond_in_second_person(msg)
+	robot.hear /track merge (.+) : (.+)$/i, (msg) -> merge_item robot, msg.message.user.name, msg.match[1], msg.match[2], respond_in_second_person(msg)
 
-	robot.hear /^track (.+) leaderboard$/i, (msg) -> list_leaderboard robot, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track (.+) leaderboard$/i, (msg) -> list_leaderboard robot, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /^track (?:(current) )?(?:(.+) )?stats(?: (\S+))?$/i, (msg) ->
+	robot.hear /track (?:(current) )?(?:(.+) )?stats(?: (\S+))?$/i, (msg) ->
 		user = if msg.match[3] then msg.match[3] else msg.message.user.name
 		callback = if msg.match[3] then respond_in_third_person(msg) else respond_in_second_person(msg)
 		only_current = !!msg.match[1]
@@ -31,7 +31,7 @@ module.exports = (robot) ->
 			when "toggle" then track_item_toggle robot, req.params.user, req.body.item, respond_with_json_and_in_room(res, robot, req.body.room)
 			when "single" then track_item_single robot, req.params.user, req.body.item, respond_with_json_and_in_room(res, robot, req.body.room)
 			when "average" then track_item_average robot, req.params.user, req.body.item, respond_with_json_and_in_room(res, robot, req.body.room)
-	
+
 	robot.router.get '/hubot/aptracker/v2/users/:user/stats', (req, res) ->
 		list_stats robot, req.params.user, false, respond_with_json(res)
 
@@ -150,7 +150,7 @@ track_item_single = (robot, user, item, callback) ->
 
 track_item_toggle = (robot, user, item, callback) ->
 	stats = get_item_stats(robot, user, item)
-	if stats.is_drinking 
+	if stats.is_drinking
 		track_item_stop robot, user, item, callback
 	else
 		track_item_start robot, user, item, callback
