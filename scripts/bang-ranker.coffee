@@ -1,13 +1,13 @@
 module.exports = (robot) ->
-	robot.hear /^rate (.+) (\d+)\s*(\/|out of)\s*(\d+)(\s+#.*)?/i, (msg) -> rate_item robot, msg.message.user.name, msg.match[1], msg.match[2], msg.match[4], msg.match[5], respond_in_second_person(msg)
+	robot.hear /rate (.+) (\d+)\s*(\/|out of)\s*(\d+)(\s+#.*)?/i, (msg) -> rate_item robot, msg.message.user.name, msg.match[1], msg.match[2], msg.match[4], msg.match[5], respond_in_second_person(msg)
 
-	robot.hear /^ranked item (.+) remove tags\s+#(.*)$/i, (msg) -> tag_remove robot, msg.match[1], msg.match[2], respond_in_second_person(msg)
+	robot.hear /ranked item (.+) remove tags\s+#(.*)$/i, (msg) -> tag_remove robot, msg.match[1], msg.match[2], respond_in_second_person(msg)
 
-	robot.hear /^ranked item (.+) add tags\s+#(.*)$/i, (msg) -> tag_add robot, msg.match[1], msg.match[2], respond_in_second_person(msg)
+	robot.hear /ranked item (.+) add tags\s+#(.*)$/i, (msg) -> tag_add robot, msg.match[1], msg.match[2], respond_in_second_person(msg)
 
-	robot.hear /^rank item (.+)$/i, (msg) -> list_item_rank robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /rank item (.+)$/i, (msg) -> list_item_rank robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /^rank (.+)$/i, (msg) -> list_ranks robot, msg.match[1], respond_in_second_person(msg)
+	robot.hear /rank (.+)$/i, (msg) -> list_ranks robot, msg.match[1], respond_in_second_person(msg)
 
 # --------------------------------
 # Core Methods
@@ -77,7 +77,7 @@ rate_item = (robot, user, item, rating, max_rating, tag_blob, callback) ->
 		callback { status: 200, code: MessageCodes.itemRatingTooHigh }
 
 list_item_rank = (robot, user, item, callback) ->
-	sanitized_user = sanitize user 
+	sanitized_user = sanitize user
 	sanitized_item = sanitize item
 	item_rating = get_item_rating robot, sanitized_item
 	item_rating.user_rating = (i for i in item_rating.user_ratings when i.user is sanitized_user)[0]

@@ -21,27 +21,27 @@
 #   alexdean
 
 module.exports = (robot) ->
-  robot.hear /^weather (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
+  robot.hear /weather (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
     location = msg.match[2]
     get_data robot, msg, location, 'forecast', location.replace(/\s/g, '_'), send_forecast, 60*60*2
 
-  robot.hear /^temp (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
+  robot.hear /temp (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
     location = msg.match[2]
-    get_data robot, msg, location, 'geolookup/conditions', location.replace(/\s/g, '_'), send_temp, 60*60*2    
+    get_data robot, msg, location, 'geolookup/conditions', location.replace(/\s/g, '_'), send_temp, 60*60*2
 
-  robot.hear /^radar (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
+  robot.hear /radar (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
     location = msg.match[2]
     get_data robot, msg, location, 'radar', location.replace(/\s/g, '_'), send_radar, 60*10
 
-  robot.hear /^satellite (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
+  robot.hear /satellite (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
     location = msg.match[2]
     get_data robot, msg, location, 'satellite', location.replace(/\s/g, '_'), send_satellite, 60*10
 
-  robot.hear /^weathercam (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
+  robot.hear /weathercam (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
     location = msg.match[2]
     get_data robot, msg, location, 'webcams', location.replace(/\s/g, '_'), send_webcam, 60*30
 
-  robot.hear /^fore (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
+  robot.hear /fore (ma|me|at|for|in)? ?(.*)$/i, (msg) ->
     location = msg.match[2]
     get_data robot, msg, location, 'forecast', location.replace(/\s/g, '_'), send_long_forecast, 60*60*2
 
@@ -100,7 +100,7 @@ get_data = (robot, msg, location, service, query, cb, lifetime, stack=0) ->
 send_temp = (msg, location, data) ->
   report = data['current']
   location = data['location']
-  msg.send "#{report['weather_descriptions'].toString()} and #{report.temperature}°F (feels like #{report.feelslike}°F) with 
+  msg.send "#{report['weather_descriptions'].toString()} and #{report.temperature}°F (feels like #{report.feelslike}°F) with
 #{report.wind_speed}mph wind in #{location.name}"
 
 send_forecast = (msg, location, data) ->
