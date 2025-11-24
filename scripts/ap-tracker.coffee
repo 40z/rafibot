@@ -1,20 +1,34 @@
 module.exports = (robot) ->
-	robot.hear /track (.+) start$/i, (msg) -> track_item_start robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track (.+) start$/i, (msg) ->
+		user = get_tracking_user robot, msg.message.user.name
+		track_item_start robot, user, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /track (.+) stop$/i, (msg) -> track_item_stop robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track (.+) stop$/i, (msg) ->
+		user = get_tracking_user robot, msg.message.user.name
+		track_item_stop robot, user, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /track single (.+)$/i, (msg) -> track_item_single robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track single (.+)$/i, (msg) ->
+		user = get_tracking_user robot, msg.message.user.name
+		track_item_single robot, user, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /track average (.+)$/i, (msg) -> track_item_average robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track average (.+)$/i, (msg) ->
+		user = get_tracking_user robot, msg.message.user.name
+		track_item_average robot, user, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /track (.*) cancel$/i, (msg) -> track_item_cancel robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+	robot.hear /track (.*) cancel$/i, (msg) ->
+		user = get_tracking_user robot, msg.message.user.name
+		track_item_cancel robot, user, msg.match[1], respond_in_second_person(msg)
 
-	robot.hear /track merge (.+) : (.+)$/i, (msg) -> merge_item robot, msg.message.user.name, msg.match[1], msg.match[2], respond_in_second_person(msg)
+	robot.hear /track merge (.+) : (.+)$/i, (msg) ->
+		user = get_tracking_user robot, msg.message.user.name
+		merge_item robot, user, msg.match[1], msg.match[2], respond_in_second_person(msg)
 
 	robot.hear /track (.+) leaderboard$/i, (msg) -> list_leaderboard robot, msg.match[1], respond_in_second_person(msg)
 
+	robot.hear /add user alias (.+)$/i, (msg) -> add_user_alias robot, msg.message.user.name, msg.match[1], respond_in_second_person(msg)
+
 	robot.hear /track (?:(current) )?(?:(.+) )?stats(?: (\S+))?$/i, (msg) ->
-		user = if msg.match[3] then msg.match[3] else msg.message.user.name
+		user = if msg.match[3] then msg.match[3] else get_tracking_user(robot, msg.message.user.name)
 		callback = if msg.match[3] then respond_in_third_person(msg) else respond_in_second_person(msg)
 		only_current = !!msg.match[1]
 		if !msg.match[2]
@@ -51,6 +65,10 @@ check_leader = (robot, item, wrapped_func) ->
 	wrapped_func()
 	new_leader_stats = get_item_leader_stats(robot, item)
 	old_leader_stats != null and new_leader_stats != null and old_leader_stats.user != new_leader_stats.user
+
+get_tracking_user = (robot, user) ->
+	normalized_user = user.toLowerCase().replace("@", "")
+	robot.brain.get("#{normalized_user}_alias") || user
 
 add_user = (robot, user) ->
 	list = get_users(robot)
@@ -175,6 +193,11 @@ merge_item = (robot, user, from_item, to_item, callback) ->
 	put_item_stats(robot, user, from_item, null, null, null)
 	callback { status: 200, code: MessageCodes.merged, from_item: from_item, stats: get_item_stats(robot, user, to_item) }
 
+add_user_alias = (robot, user, alias, callback) ->
+	normalized_user = user.toLowerCase().replace("@", "")
+	robot.brain.set("#{normalized_user}_alias", alias)
+	callback { status: 200, code: MessageCodes.aliasAdded }
+
 # --------------------------------
 # Translators
 # --------------------------------
@@ -215,6 +238,7 @@ MessageCodes =
 	stats: 14
 	currentStats: 15
 	leaderBoard: 16
+	aliasAdded: 17
 
 second_person = (response) ->
 	new_king = (a) -> "#{if a.is_new_leader then "\n#{a.stats.user} is the new leader with #{pluralize a.stats.count, a.stats.item}! :crown:\nThe king is dead, long live the king!" else ""}"
@@ -240,6 +264,7 @@ second_person = (response) ->
 			else if response.count_leader != null
 				message += "#{response.count_leader.user} drank the most #{pluralize_lib response.count_leader.item, response.count_leader.count} at #{response.count_leader.count}\n"
 			message += "#{("#{stat.user} drank #{pluralize stat.count, stat.item}!" for stat in response.leaderboard).join("\n")}"
+		when MessageCodes.aliasAdded then "Alias added"
 		else "I don't know what to say about that."
 
 third_person = (response) ->
